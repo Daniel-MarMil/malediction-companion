@@ -47,17 +47,21 @@ tests/                Pruebas (GoogleTest, RapidCheck) y comprobación de la cab
 fuzz/                 Objetivos de libFuzzer y corpus inicial
 content/test/         Paquete de reglas ficticio para las pruebas
 content/official/     Contenido oficial privado (ignorado por git)
-docs/adr/             Decisiones de arquitectura
-tools/ci/             Tareas de la integración continua
+docs/                 Decisiones de arquitectura (adr/) y guía del entorno local
+tools/ci/             Tareas de la integración continua, también para uso local
+tools/dev/            Preparación del entorno local
 .woodpecker/          Flujos de Woodpecker CI
 ```
 
 ## Compilar
 
+Para preparar en Windows el entorno completo (WSL 2, Android Studio y, si se quiere, MSVC), sigue
+[`docs/entorno-local.md`](docs/entorno-local.md).
+
 Hace falta CMake 3.25 o posterior, Ninja y un compilador C++20 (GCC 13, Clang 18 o el MSVC de
-Visual Studio 2022). Las dependencias salen de [vcpkg](https://vcpkg.io) en modo manifiesto, con la
-versión fijada en `vcpkg.json` (ADR-10); la variable `VCPKG_ROOT` debe apuntar a vcpkg.
-`tools/ci/bootstrap-vcpkg.sh` lo descarga en esa versión.
+Visual Studio 2022 o 2026). Las dependencias salen de [vcpkg](https://vcpkg.io) en modo
+manifiesto, con la versión fijada en `vcpkg.json` (ADR-10); la variable `VCPKG_ROOT` debe apuntar
+a vcpkg. `tools/ci/bootstrap-vcpkg.sh` lo descarga en esa versión.
 
 ```sh
 cmake --preset dev            # Debug con pruebas; «release» para Release
@@ -65,8 +69,8 @@ cmake --build --preset dev
 ctest --preset dev
 ```
 
-En Windows, abre la carpeta con Visual Studio 2022 (17.5 o posterior) con la integración de
-`CMakePresets.json` activada, o usa la consola de desarrollador. Los presets `asan`, `tsan`,
+En Windows, abre la carpeta con Visual Studio 2022 (17.5 o posterior) o 2026 con la integración
+de `CMakePresets.json` activada, o usa la consola de desarrollador. Los presets `asan`, `tsan`,
 `coverage` y `fuzz` están pensados para Linux o WSL 2; `tools/ci/ci.sh` los ejecuta igual que la
 integración continua:
 
@@ -75,6 +79,7 @@ tools/ci/ci.sh asan        # AddressSanitizer y UBSan
 tools/ci/ci.sh tsan        # ThreadSanitizer
 tools/ci/ci.sh coverage    # cobertura; falla por debajo del 90 %
 tools/ci/ci.sh fuzz        # Clang y libFuzzer
+tools/ci/ci.sh all         # todo lo que hace la integración continua
 ```
 
 Fuera de Windows, vcpkg compila libsodium con autotools: instala `autoconf`, `autoconf-archive`,
