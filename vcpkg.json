@@ -1,0 +1,21 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "app-malediction",
+  "version": "0.1.0",
+  "description": "Compañero digital para partidas de Malediction: núcleo de reglas en C++",
+  "license": "Apache-2.0",
+  "dependencies": [
+    "libsodium",
+    "nlohmann-json"
+  ],
+  "features": {
+    "tests": {
+      "description": "Pruebas del núcleo con GoogleTest y RapidCheck",
+      "dependencies": [
+        "gtest",
+        "rapidcheck"
+      ]
+    }
+  },
+  "builtin-baseline": "6fdd23fa0a9479a9f9a1c48178696f60cf39255d"
+}

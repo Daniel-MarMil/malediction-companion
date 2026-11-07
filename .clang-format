@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2026 Daniel Martín Millet
+# SPDX-License-Identifier: Apache-2.0
+#
+# Estilo del código C y C++. Comprobación: clang-format --dry-run --Werror <ficheros>
+BasedOnStyle: Google
+Language: Cpp
+Standard: c++20
+IndentWidth: 4
+ContinuationIndentWidth: 4
+ColumnLimit: 120
+AccessModifierOffset: -4
+DerivePointerAlignment: false
+PointerAlignment: Left
+IncludeBlocks: Preserve
+SortIncludes: CaseSensitive
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+IndentPPDirectives: AfterHash
+PPIndentWidth: 2
+SpacesBeforeTrailingComments: 2
+InsertBraces: true

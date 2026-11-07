@@ -1,0 +1,30 @@
+# SPDX-FileCopyrightText: 2026 Daniel Martín Millet
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licencias (ADR-08 y RNF-15): cabeceras SPDX, análisis con ScanCode Toolkit y
+# licencias de las dependencias de vcpkg según su SBOM.
+
+when:
+  - event: [push, pull_request, manual]
+
+steps:
+  - name: cabeceras-spdx
+    image: python:3.13-slim
+    commands:
+      - python3 tools/ci/check_licenses.py
+
+  # ScanCode 32.5.0 no arranca con pluggy 1.7 (comprobado el 07-11-2026); con 1.6 sí.
+  - name: scancode
+    image: python:3.13-slim
+    commands:
+      - pip install --quiet scancode-toolkit==32.5.0 "pluggy<1.7"
+      - >-
+        scancode --license --processes 2 --quiet
+        --ignore "build/*" --ignore ".vcpkg/*" --ignore ".ndk/*"
+        --json-pp scancode.json .
+      - python3 tools/ci/check_licenses.py --scancode scancode.json
+
+  - name: dependencias-vcpkg
+    image: ubuntu:24.04
+    commands:
+      - tools/ci/ci.sh vcpkg-licenses

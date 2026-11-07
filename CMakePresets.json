@@ -1,0 +1,229 @@
+{
+  "version": 5,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "vcpkg-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "VCPKG_MANIFEST_FEATURES": "tests"
+      }
+    },
+    {
+      "name": "not-windows",
+      "hidden": true,
+      "condition": {
+        "type": "notEquals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "dev",
+      "displayName": "Desarrollo: Debug con pruebas",
+      "inherits": "vcpkg-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release con pruebas",
+      "inherits": "vcpkg-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "asan",
+      "displayName": "AddressSanitizer y UBSan (Linux, WSL o macOS)",
+      "inherits": [
+        "vcpkg-base",
+        "not-windows"
+      ],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "MC_SANITIZERS": "address,undefined"
+      }
+    },
+    {
+      "name": "tsan",
+      "displayName": "ThreadSanitizer (Linux, WSL o macOS)",
+      "inherits": [
+        "vcpkg-base",
+        "not-windows"
+      ],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "MC_SANITIZERS": "thread"
+      }
+    },
+    {
+      "name": "coverage",
+      "displayName": "Cobertura con gcov (Linux, WSL o macOS)",
+      "inherits": [
+        "vcpkg-base",
+        "not-windows"
+      ],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "MC_COVERAGE": "ON"
+      }
+    },
+    {
+      "name": "fuzz",
+      "displayName": "Fuzzing con libFuzzer, ASan y UBSan (Clang en Linux o WSL)",
+      "inherits": [
+        "vcpkg-base",
+        "not-windows"
+      ],
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "MC_SANITIZERS": "address,undefined",
+        "MC_BUILD_FUZZERS": "ON",
+        "MC_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "system",
+      "displayName": "Bibliotecas del sistema, sin vcpkg (Linux)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "android-base",
+      "hidden": true,
+      "inherits": "vcpkg-base",
+      "cacheVariables": {
+        "VCPKG_MANIFEST_FEATURES": null,
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake",
+        "ANDROID_PLATFORM": "android-28",
+        "BUILD_SHARED_LIBS": "ON",
+        "MC_BUILD_TESTS": "OFF",
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "android-arm64",
+      "displayName": "Android arm64-v8a: biblioteca para móviles",
+      "inherits": "android-base",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "arm64-android",
+        "ANDROID_ABI": "arm64-v8a"
+      }
+    },
+    {
+      "name": "android-x86_64",
+      "displayName": "Android x86_64: biblioteca para el emulador",
+      "inherits": "android-base",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-android",
+        "ANDROID_ABI": "x86_64"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "dev",
+      "configurePreset": "dev"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "asan",
+      "configurePreset": "asan"
+    },
+    {
+      "name": "tsan",
+      "configurePreset": "tsan"
+    },
+    {
+      "name": "coverage",
+      "configurePreset": "coverage"
+    },
+    {
+      "name": "fuzz",
+      "configurePreset": "fuzz"
+    },
+    {
+      "name": "system",
+      "configurePreset": "system"
+    },
+    {
+      "name": "android-arm64",
+      "configurePreset": "android-arm64"
+    },
+    {
+      "name": "android-x86_64",
+      "configurePreset": "android-x86_64"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "test-base",
+      "hidden": true,
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "dev",
+      "inherits": "test-base",
+      "configurePreset": "dev"
+    },
+    {
+      "name": "release",
+      "inherits": "test-base",
+      "configurePreset": "release"
+    },
+    {
+      "name": "asan",
+      "inherits": "test-base",
+      "configurePreset": "asan",
+      "environment": {
+        "ASAN_OPTIONS": "detect_leaks=1:abort_on_error=1:strict_string_checks=1",
+        "UBSAN_OPTIONS": "print_stacktrace=1:halt_on_error=1"
+      }
+    },
+    {
+      "name": "tsan",
+      "inherits": "test-base",
+      "configurePreset": "tsan",
+      "environment": {
+        "TSAN_OPTIONS": "halt_on_error=1"
+      }
+    },
+    {
+      "name": "coverage",
+      "inherits": "test-base",
+      "configurePreset": "coverage"
+    },
+    {
+      "name": "system",
+      "inherits": "test-base",
+      "configurePreset": "system"
+    }
+  ]
+}

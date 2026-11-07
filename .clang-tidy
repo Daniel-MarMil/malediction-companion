@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: 2026 Daniel Martín Millet
+# SPDX-License-Identifier: Apache-2.0
+#
+# Análisis estático del núcleo. Uso: clang-tidy -p build/<preset> core/src/*.cpp
+# Excepciones razonadas:
+#  - reinterpret_cast, new[] y delete[] son necesarios en la frontera en C (ADR-11).
+#  - Los números mágicos y los nombres cortos se dejan al criterio de la revisión.
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  cert-*,
+  clang-analyzer-*,
+  concurrency-*,
+  cppcoreguidelines-*,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-owning-memory,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-avoid-const-or-ref-data-members,
+  misc-*,
+  -misc-include-cleaner,
+  -misc-non-private-member-variables-in-classes,
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  performance-*,
+  portability-*,
+  readability-*,
+  -readability-identifier-length,
+  -readability-magic-numbers
+HeaderFilterRegex: '.*/core/(include|src)/.*'
+FormatStyle: file
+CheckOptions:
+  - key: readability-function-cognitive-complexity.Threshold
+    value: 30

@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2026 Daniel Martín Millet
+# SPDX-License-Identifier: Apache-2.0
+
+# Finales de línea LF en el repositorio, también al trabajar desde Windows.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binarios
+*.png binary
+*.jpg binary
+*.webp binary
+*.ttf binary
+*.otf binary
+*.sig binary

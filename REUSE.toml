@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: 2026 Daniel Martín Millet
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licencia de los ficheros que no admiten comentarios (especificación REUSE).
+# content/official no aparece: ese contenido es de Loot Studios y no va al repositorio.
+version = 1
+
+[[annotations]]
+path = [
+  "vcpkg.json",
+  "CMakePresets.json",
+  "content/test/**",
+  "fuzz/corpus/**",
+  "NOTICE",
+]
+SPDX-FileCopyrightText = "2026 Daniel Martín Millet"
+SPDX-License-Identifier = "Apache-2.0"

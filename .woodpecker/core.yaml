@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 Daniel Martín Millet
+# SPDX-License-Identifier: Apache-2.0
+#
+# Núcleo C++: pruebas, sanitizers, cobertura, fuzzing, análisis y biblioteca para Android
+# (RNF-17, RNF-19 y RNF-20). Corre en un agente Linux de Woodpecker. Cada paso llama a
+# tools/ci/ci.sh, que también se puede ejecutar a mano. vcpkg, su caché de binarios y el
+# NDK quedan en el espacio de trabajo, que comparten todos los pasos.
+# Antes de activarla, fija la imagen por su digest (ubuntu:24.04@sha256:...).
+
+when:
+  - event: [push, pull_request, manual]
+
+variables:
+  - &image ubuntu:24.04
+
+steps:
+  - name: asan-ubsan
+    image: *image
+    commands:
+      - tools/ci/ci.sh asan
+
+  - name: tsan
+    image: *image
+    commands:
+      - tools/ci/ci.sh tsan
+
+  - name: release
+    image: *image
+    commands:
+      - tools/ci/ci.sh release
+
+  - name: cobertura
+    image: *image
+    commands:
+      - tools/ci/ci.sh coverage
+
+  - name: fuzzing
+    image: *image
+    commands:
+      - tools/ci/ci.sh fuzz
+
+  - name: formato-y-analisis
+    image: *image
+    commands:
+      - tools/ci/ci.sh lint
+
+  - name: android
+    image: *image
+    commands:
+      - tools/ci/ci.sh android
