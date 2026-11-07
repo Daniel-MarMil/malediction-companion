@@ -19,6 +19,11 @@ vcpkg_root="$data_dir/vcpkg"
 ndk_dir="$data_dir/android-ndk"
 build_root="$cache_dir/malediction-companion/build"
 
+# pipx y Woodpecker CLI van a ~/.local/bin. Con esa carpeta ya en el PATH, pipx no avisa de
+# que falta y las herramientas sirven durante el resto del script.
+mkdir -p "$bin_dir"
+export PATH="$bin_dir:$PATH"
+
 # Woodpecker CLI para validar los flujos de .woodpecker/ (versión y suma de la publicación oficial).
 woodpecker_version="3.20.1"
 woodpecker_sha256="5b74ff1808af35b57bd5c2b528b7fdff24f5f69ad327715c1797f764da79dc13"
