@@ -1,50 +1,21 @@
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
 #
-# Núcleo C++: pruebas, sanitizers, cobertura, fuzzing, análisis y biblioteca para Android
-# (RNF-17, RNF-19 y RNF-20). Corre en un agente Linux de Woodpecker. Cada paso llama a
-# tools/ci/ci.sh, que también se puede ejecutar a mano. vcpkg, su caché de binarios y el
-# NDK quedan en el espacio de trabajo, que comparten todos los pasos.
+# Núcleo C++ en cada push y pull request: formato y clang-tidy, AddressSanitizer y UBSan,
+# cobertura mínima del 90 % y licencias de las dependencias (RNF-15, RNF-17 y RNF-19).
+# Va todo en un solo paso para instalar las herramientas y compilar las dependencias una
+# sola vez, como pide el uso razonable de Codeberg CI. Las pruebas largas están en
+# extended.yaml. No se ejecuta si el push solo cambia documentación.
 # Antes de activarla, fija la imagen por su digest (ubuntu:24.04@sha256:...).
 
 when:
-  - event: [push, pull_request, manual]
-
-variables:
-  - &image ubuntu:24.04
+  - event: [push, pull_request]
+    path:
+      exclude: ["docs/**", "**/*.md", "LICENSE", "LICENSES/**", "NOTICE"]
+  - event: manual
 
 steps:
-  - name: asan-ubsan
-    image: *image
+  - name: pruebas
+    image: ubuntu:24.04
     commands:
-      - tools/ci/ci.sh asan
-
-  - name: tsan
-    image: *image
-    commands:
-      - tools/ci/ci.sh tsan
-
-  - name: release
-    image: *image
-    commands:
-      - tools/ci/ci.sh release
-
-  - name: cobertura
-    image: *image
-    commands:
-      - tools/ci/ci.sh coverage
-
-  - name: fuzzing
-    image: *image
-    commands:
-      - tools/ci/ci.sh fuzz
-
-  - name: formato-y-analisis
-    image: *image
-    commands:
-      - tools/ci/ci.sh lint
-
-  - name: android
-    image: *image
-    commands:
-      - tools/ci/ci.sh android
+      - tools/ci/ci.sh lint asan coverage licenses

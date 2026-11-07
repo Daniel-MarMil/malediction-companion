@@ -78,6 +78,19 @@
       }
     },
     {
+      "name": "tidy",
+      "displayName": "Análisis con clang-tidy (Clang en Linux o WSL)",
+      "inherits": [
+        "vcpkg-base",
+        "not-windows"
+      ],
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
       "name": "fuzz",
       "displayName": "Fuzzing con libFuzzer, ASan y UBSan (Clang en Linux o WSL)",
       "inherits": [

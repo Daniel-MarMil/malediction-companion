@@ -143,9 +143,15 @@ Cada incidencia lleva un código estable que la app traduce: `seeker_missing`,
 ## Integración continua
 
 Los flujos de [`.woodpecker/`](.woodpecker) llaman a `tools/ci/ci.sh`, que también se puede
-ejecutar a mano: sanitizers, cobertura mínima del 90 % (RNF-17), fuzzing, clang-format y
-clang-tidy, biblioteca para Android con comprobación de 16 KB y licencias (cabeceras SPDX,
-ScanCode y SBOM de vcpkg).
+ejecutar en local. Para no gastar más recursos de Codeberg de los necesarios, lo pesado va aparte:
+
+| Flujo | Cuándo | Qué |
+|---|---|---|
+| `core.yaml` | En cada push y pull request, salvo si solo cambia documentación | clang-format y clang-tidy, ASan y UBSan, cobertura mínima del 90 % (RNF-17) y licencias de las dependencias |
+| `extended.yaml` | Una vez por semana o a mano | ThreadSanitizer, Release, fuzzing y biblioteca para Android con comprobación de 16 KB (RNF-19 y RNF-20) |
+| `licenses.yaml` | Cabeceras SPDX en cada push; ScanCode, una vez por semana o a mano | Licencias del código propio (RNF-15) |
+
+Para la ejecución semanal, crea en Woodpecker una tarea programada (Cron) llamada `semanal`.
 
 ## Licencia
 
