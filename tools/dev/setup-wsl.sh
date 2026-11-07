@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
 #
-# Prepara Ubuntu 24.04 (en WSL 2 o nativo) para compilar y probar el núcleo igual que la
+# Prepara Ubuntu 26.04 (en WSL 2 o nativo) para compilar y probar el núcleo igual que la
 # integración continua. Se ejecuta una vez, como usuario normal (pide sudo para apt):
 #   tools/dev/setup-wsl.sh
 #
@@ -36,14 +36,14 @@ if [ "$(id -u)" -eq 0 ]; then
     echo "Ejecuta este script con tu usuario, no como root: pedirá sudo cuando haga falta." >&2
     exit 1
 fi
-if ! grep -q 'VERSION_ID="24.04"' /etc/os-release 2> /dev/null; then
-    echo "Aviso: la integración continua usa Ubuntu 24.04 y este sistema es otro; puede haber diferencias." >&2
+if ! grep -q 'VERSION_ID="26.04"' /etc/os-release 2> /dev/null; then
+    echo "Aviso: la integración continua usa Ubuntu 26.04 y este sistema es otro; puede haber diferencias." >&2
 fi
 
 step "Paquetes del sistema"
 sudo apt-get update -qq
 sudo apt-get install -y -qq --no-install-recommends \
-    build-essential clang libclang-rt-18-dev clang-tidy clang-format cmake ninja-build git curl \
+    build-essential clang libclang-rt-dev clang-tidy clang-format cmake ninja-build git curl \
     ca-certificates zip unzip tar pkg-config python3 python3-pip pipx \
     autoconf autoconf-archive automake libtool gdb valgrind cppcheck shellcheck yamllint
 

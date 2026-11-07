@@ -5,6 +5,8 @@
 # Excepciones razonadas:
 #  - reinterpret_cast, new[] y delete[] son necesarios en la frontera en C (ADR-11).
 #  - Los números mágicos y los nombres cortos se dejan al criterio de la revisión.
+#  - Las cabeceras C++ usan #pragma once, que admiten GCC, Clang, MSVC y el NDK.
+#    La cabecera en C (mc_api.h) mantiene la guarda clásica para cualquier compilador.
 Checks: >
   -*,
   bugprone-*,
@@ -25,6 +27,7 @@ Checks: >
   -modernize-use-trailing-return-type,
   performance-*,
   portability-*,
+  -portability-avoid-pragma-once,
   readability-*,
   -readability-identifier-length,
   -readability-magic-numbers

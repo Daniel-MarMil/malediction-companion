@@ -58,8 +58,8 @@ tools/dev/            Preparación del entorno local
 Para preparar en Windows el entorno completo (WSL 2, Android Studio y, si se quiere, MSVC), sigue
 [`docs/entorno-local.md`](docs/entorno-local.md).
 
-Hace falta CMake 3.25 o posterior, Ninja y un compilador C++20 (GCC 13, Clang 18 o el MSVC de
-Visual Studio 2022 o 2026). Las dependencias salen de [vcpkg](https://vcpkg.io) en modo
+Hace falta CMake 3.25 o posterior, Ninja y un compilador C++20 (GCC 13 o posterior, Clang 18 o posterior,
+o el MSVC de Visual Studio 2022 o 2026). Las dependencias salen de [vcpkg](https://vcpkg.io) en modo
 manifiesto, con la versión fijada en `vcpkg.json` (ADR-10); la variable `VCPKG_ROOT` debe apuntar
 a vcpkg. `tools/ci/bootstrap-vcpkg.sh` lo descarga en esa versión.
 
@@ -87,7 +87,7 @@ Fuera de Windows, vcpkg compila libsodium con autotools: instala `autoconf`, `au
 
 ### Sin vcpkg
 
-En Linux se puede compilar con las bibliotecas del sistema. En Ubuntu 24.04:
+En Linux se puede compilar con las bibliotecas del sistema. En Ubuntu 26.04 o 24.04:
 
 ```sh
 sudo apt install libsodium-dev nlohmann-json3-dev libgtest-dev librapidcheck-dev
@@ -156,7 +156,8 @@ ejecutar en local. Para no gastar más recursos de Codeberg de los necesarios, l
 | `extended.yaml` | Una vez por semana o a mano | ThreadSanitizer, Release, fuzzing y biblioteca para Android con comprobación de 16 KB (RNF-19 y RNF-20) |
 | `licenses.yaml` | Cabeceras SPDX en cada push; ScanCode, una vez por semana o a mano | Licencias del código propio (RNF-15) |
 
-Para la ejecución semanal, crea en Woodpecker una tarea programada (Cron) llamada `semanal`.
+`core.yaml` y `extended.yaml` usan la imagen `ubuntu:26.04` (GCC 15, Clang 21 y CMake 4.2). Para la
+ejecución semanal, crea en Woodpecker una tarea programada (Cron) llamada `semanal`.
 
 ## Licencia
 

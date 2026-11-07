@@ -6,7 +6,7 @@
 # Va todo en un solo paso para instalar las herramientas y compilar las dependencias una
 # sola vez, como pide el uso razonable de Codeberg CI. Las pruebas largas están en
 # extended.yaml. No se ejecuta si el push solo cambia documentación.
-# Antes de activarla, fija la imagen por su digest (ubuntu:24.04@sha256:...).
+# Antes de activarla, fija la imagen por su digest (ubuntu:26.04@sha256:...).
 
 when:
   - event: [push, pull_request]
@@ -16,6 +16,6 @@ when:
 
 steps:
   - name: pruebas
-    image: ubuntu:24.04
+    image: ubuntu:26.04
     commands:
       - tools/ci/ci.sh lint asan coverage licenses

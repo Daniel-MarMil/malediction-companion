@@ -53,7 +53,7 @@ std::string error_body(std::string_view code, std::string_view detail) {
 }
 
 Reply bad_command(std::string_view code, std::string_view detail) {
-    return {MC_ERR_BAD_COMMAND, error_body(code, detail)};
+    return {.status = MC_ERR_BAD_COMMAND, .body = error_body(code, detail)};
 }
 
 /// Copia el texto en un búfer nuevo terminado en un byte nulo. Devuelve false sin memoria.
@@ -82,7 +82,7 @@ Reply pack_info(const mc_session& session) {
     json body = json::object();
     body["ok"] = true;
     body["pack"] = core::detail::pack_info_to_json(session.pack);
-    return {MC_OK, core::detail::to_text(body)};
+    return {.status = MC_OK, .body = core::detail::to_text(body)};
 }
 
 Reply validate_deck(const mc_session& session, const json& command) {
@@ -101,7 +101,7 @@ Reply validate_deck(const mc_session& session, const json& command) {
     body["ok"] = true;
     body["valid"] = issues.empty();
     body["issues"] = core::detail::issues_to_json(issues);
-    return {MC_OK, core::detail::to_text(body)};
+    return {.status = MC_OK, .body = core::detail::to_text(body)};
 }
 
 Reply dispatch(const mc_session& session, std::string_view text) {

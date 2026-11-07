@@ -135,9 +135,10 @@ std::vector<std::string> read_sigils(const json& card, const std::string& where)
         }
         sigils.push_back(sigil.get<std::string>());
     }
-    // Ordenados y sin repetir, para comparar conjuntos con std::includes.
-    std::sort(sigils.begin(), sigils.end());
-    sigils.erase(std::unique(sigils.begin(), sigils.end()), sigils.end());
+    // Ordenados y sin repetir, para comparar conjuntos con std::ranges::includes.
+    std::ranges::sort(sigils);
+    const auto repeated = std::ranges::unique(sigils);
+    sigils.erase(repeated.begin(), repeated.end());
     return sigils;
 }
 

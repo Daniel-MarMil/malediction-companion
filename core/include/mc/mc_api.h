@@ -37,8 +37,8 @@ extern "C" {
 #  define MC_NOEXCEPT
 #endif
 
-/* Es una cabecera C: typedef y enum sin tipo base son lo correcto aquí. */
-/* NOLINTBEGIN(modernize-use-using, performance-enum-size) */
+/* Es una cabecera C: typedef y enum sin ámbito ni tipo base son lo correcto aquí. */
+/* NOLINTBEGIN(modernize-use-using, performance-enum-size, cppcoreguidelines-use-enum-class) */
 
 /** Sesión opaca: un paquete de reglas cargado y su estado. */
 typedef struct mc_session mc_session;
@@ -52,7 +52,7 @@ typedef enum mc_status {
     MC_ERR_INTERNAL = 4          /**< Error inesperado del núcleo, por ejemplo sin memoria. */
 } mc_status;
 
-/* NOLINTEND(modernize-use-using, performance-enum-size) */
+/* NOLINTEND(modernize-use-using, performance-enum-size, cppcoreguidelines-use-enum-class) */
 
 /** Versión del núcleo, por ejemplo "0.1.0". Es una cadena estática: no se libera. */
 MC_API const char* mc_version(void) MC_NOEXCEPT;

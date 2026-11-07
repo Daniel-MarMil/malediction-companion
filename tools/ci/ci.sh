@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Tareas del núcleo para la integración continua y para el entorno local (WSL o Linux).
-# En la CI corren como root dentro de ubuntu:24.04 e instalan lo que falta; en local usan
+# En la CI corren como root dentro de ubuntu:26.04 e instalan lo que falta; en local usan
 # lo que dejó tools/dev/setup-wsl.sh.
 #
 # Uso: tools/ci/ci.sh TAREA [TAREA...]
@@ -54,7 +54,7 @@ install_packages() {
     fi
     apt-get update -qq
     apt-get install -y -qq --no-install-recommends \
-        build-essential clang libclang-rt-18-dev clang-tidy clang-format cmake ninja-build git curl \
+        build-essential clang libclang-rt-dev clang-tidy clang-format cmake ninja-build git curl \
         ca-certificates zip unzip tar pkg-config python3 python3-pip autoconf autoconf-archive automake libtool
 }
 
@@ -125,8 +125,10 @@ run_task() {
             ensure_gcovr
             build_preset coverage
             mkdir -p "$build_root/coverage/html"
+            # Solo los datos de esta compilación: sin buscar en el repositorio, que en WSL es lento y
+            # puede tener datos viejos de otras compilaciones.
             gcovr --root . --filter core/src/ --object-directory "$build_root/coverage" --txt --print-summary \
-                --html-details "$build_root/coverage/html/index.html" --fail-under-line 90
+                --html-details "$build_root/coverage/html/index.html" --fail-under-line 90 "$build_root/coverage"
             echo "Informe de cobertura: $build_root/coverage/html/index.html"
             ;;
         fuzz)

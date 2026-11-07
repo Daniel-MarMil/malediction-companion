@@ -151,7 +151,7 @@ private:
                          "las cartas de tipo " + std::string(to_string(card->type)) + " no van en el mazo");
                 continue;
             }
-            if (rules_.copy_limits.find(card->rank) == rules_.copy_limits.end()) {
+            if (!rules_.copy_limits.contains(card->rank)) {
                 add_once(Rule::RankNotAllowed, card->id,
                          "las cartas de rango " + std::string(to_string(card->rank)) + " no van en el mazo");
                 continue;
@@ -174,7 +174,7 @@ private:
             return;  // Sin un Seeker válido no hay sigilos con los que comparar.
         }
         // Una carta entra solo si todos sus sigilos están en el Seeker.
-        if (!std::includes(seeker->sigils.begin(), seeker->sigils.end(), card.sigils.begin(), card.sigils.end())) {
+        if (!std::ranges::includes(seeker->sigils, card.sigils)) {
             add_once(Rule::SigilMismatch, card.id,
                      "sigilos de la carta: " + join(card.sigils) + "; del Seeker: " + join(seeker->sigils));
         }

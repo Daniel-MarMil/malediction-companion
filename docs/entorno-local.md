@@ -13,23 +13,27 @@ y empezar a desarrollar la app Android. Está pensado para Windows con WSL 2.
 | Dónde | Qué |
 |---|---|
 | Windows | El repositorio, Git, Android Studio con el emulador y, si se quiere, Visual Studio para compilar el núcleo con MSVC. |
-| WSL 2 con Ubuntu 24.04 | El núcleo: compilación, pruebas, sanitizers, cobertura, fuzzing, análisis y biblioteca para Android. Es la misma versión de Ubuntu que usa la integración continua. |
+| WSL 2 con Ubuntu 26.04 | El núcleo: compilación, pruebas, sanitizers, cobertura, fuzzing, análisis y biblioteca para Android. Es la misma versión de Ubuntu que usa la integración continua. |
 
 El código está en una sola copia, la de Windows. Ubuntu trabaja sobre ella a través de `/mnt/c`,
 pero compila en `~/.cache/malediction-companion/build`: es más rápido y evita la ruta con espacios
 (`My projects`), que da problemas a algunas herramientas de compilación.
 
-## 1. Instalar WSL 2 y Ubuntu 24.04
+## 1. Instalar WSL 2 y Ubuntu 26.04
 
 En PowerShell como administrador:
 
 ```powershell
-wsl --install -d Ubuntu-24.04
+wsl --install -d Ubuntu-26.04
 ```
 
 Reinicia si lo pide. Al abrir Ubuntu por primera vez, crea tu usuario y tu contraseña. Para
-comprobarlo, `wsl -l -v` debe mostrar `Ubuntu-24.04` con la versión 2. Si la instalación falla,
-actualiza WSL con `wsl --update`: Ubuntu 24.04 necesita WSL 2.4.10 o posterior.
+comprobarlo, `wsl -l -v` debe mostrar `Ubuntu-26.04` con la versión 2. Si la instalación falla,
+actualiza WSL con `wsl --update` y vuelve a intentarlo.
+
+Ubuntu 24.04 también sirve: el núcleo compila y pasa las pruebas con GCC 13 y Clang 18. La
+integración continua usa las versiones de 26.04 (GCC 15 y Clang 21), así que allí clang-tidy
+puede encontrar cosas que en 24.04 no ve.
 
 ## 2. Preparar Ubuntu
 
@@ -77,6 +81,35 @@ Para validar los flujos de integración continua antes de subirlos:
 ```sh
 woodpecker-cli lint --strict .woodpecker/core.yaml
 ```
+
+### Si vcpkg no puede descargar las dependencias
+
+Un error como `Could not resolve hostname` al descargar es un problema de DNS de WSL, no del
+proyecto; los errores de CMake y Ninja que salen después son consecuencia de ese fallo. Se
+confirma si `getent hosts github.com` no devuelve nada.
+
+1. En Windows, crea o edita `%UserProfile%\.wslconfig` con este contenido:
+   ```ini
+   [wsl2]
+   dnsTunneling=true
+   networkingMode=mirrored
+   ```
+   Las dos opciones necesitan Windows 11 22H2 o posterior; `dnsTunneling` ya viene activada por
+   defecto en esas versiones. Después, en PowerShell, `wsl --shutdown`, y vuelve a abrir Ubuntu.
+2. Si sigue fallando (por ejemplo, con una VPN), fija el DNS dentro de Ubuntu. Añade a
+   `/etc/wsl.conf` (se edita con `sudo`, por ejemplo `sudo nano /etc/wsl.conf`):
+   ```ini
+   [network]
+   generateResolvConf = false
+   ```
+   Ejecuta `wsl --shutdown` en PowerShell, abre Ubuntu y crea el archivo con un servidor DNS,
+   por ejemplo el de Quad9:
+   ```sh
+   sudo rm -f /etc/resolv.conf
+   echo "nameserver 9.9.9.9" | sudo tee /etc/resolv.conf
+   ```
+
+Cuando `getent hosts github.com` responda, repite la tarea que falló.
 
 ## 4. Android Studio en Windows
 
@@ -132,7 +165,7 @@ Sirve para comprobar que el núcleo también compila con el compilador de Micros
 
 ## Lista de comprobación
 
-- [ ] `wsl -l -v` muestra `Ubuntu-24.04` con la versión 2.
+- [ ] `wsl -l -v` muestra `Ubuntu-26.04` con la versión 2.
 - [ ] `tools/ci/ci.sh asan` pasa todas las pruebas.
 - [ ] `tools/ci/ci.sh android` genera `libmc_core.so` y supera la comprobación de 16 KB.
 - [ ] El emulador arranca y `emulator -accel-check` muestra WHPX.

@@ -4,7 +4,7 @@
 # Pruebas largas, una vez por semana o a mano: ThreadSanitizer, Release, fuzzing y
 # biblioteca para Android con el NDK r30, alineada a 16 KB (RNF-19 y RNF-20).
 # Para la ejecución semanal, crea en Woodpecker una tarea programada (Cron) llamada
-# «semanal». Antes de activarla, fija la imagen por su digest (ubuntu:24.04@sha256:...).
+# «semanal». Antes de activarla, fija la imagen por su digest (ubuntu:26.04@sha256:...).
 
 when:
   - event: cron
@@ -13,16 +13,16 @@ when:
 
 steps:
   - name: tsan-y-release
-    image: ubuntu:24.04
+    image: ubuntu:26.04
     commands:
       - tools/ci/ci.sh tsan release
 
   - name: fuzzing
-    image: ubuntu:24.04
+    image: ubuntu:26.04
     commands:
       - tools/ci/ci.sh fuzz
 
   - name: android
-    image: ubuntu:24.04
+    image: ubuntu:26.04
     commands:
       - tools/ci/ci.sh android
