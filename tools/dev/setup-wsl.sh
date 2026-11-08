@@ -6,7 +6,7 @@
 # integración continua. Se ejecuta una vez, como usuario normal (pide sudo para apt):
 #   tools/dev/setup-wsl.sh
 #
-# Deja vcpkg y el NDK en ~/.local/share, las compilaciones en ~/.cache/malediction-companion
+# Deja vcpkg y el NDK en ~/.local/share, las compilaciones en ~/.cache/seekers-companion
 # y las variables en ~/.bashrc. Se puede repetir sin problemas para actualizar.
 set -euo pipefail
 
@@ -17,7 +17,7 @@ bin_dir="$HOME/.local/bin"
 
 vcpkg_root="$data_dir/vcpkg"
 ndk_dir="$data_dir/android-ndk"
-build_root="$cache_dir/malediction-companion/build"
+build_root="$cache_dir/seekers-companion/build"
 
 # pipx y Woodpecker CLI van a ~/.local/bin. Con esa carpeta ya en el PATH, pipx no avisa de
 # que falta y las herramientas sirven durante el resto del script.
@@ -69,10 +69,13 @@ rm -rf "$tmp"
 
 step "Variables en ~/.bashrc"
 mkdir -p "$build_root"
-begin="# >>> malediction-companion >>>"
-end="# <<< malediction-companion <<<"
+begin="# >>> seekers-companion >>>"
+end="# <<< seekers-companion <<<"
 touch "$HOME/.bashrc"
-sed -i "/^$begin\$/,/^$end\$/d" "$HOME/.bashrc"
+# Quita el bloque anterior, también los que dejaban los nombres antiguos del proyecto.
+for name in seekers-companion seeker-companion malediction-companion; do
+    sed -i "/^# >>> $name >>>\$/,/^# <<< $name <<<\$/d" "$HOME/.bashrc"
+done
 cat >> "$HOME/.bashrc" << EOF
 $begin
 export VCPKG_ROOT="$vcpkg_root"

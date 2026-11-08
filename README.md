@@ -3,7 +3,7 @@ SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# App Malediction
+# Seekers Companion
 
 Compañero digital para partidas de [Malediction](https://malediction.gg), el juego de cartas con
 miniaturas de Loot Studios: mazos que cumplen el reglamento, contadores de eco y maestría

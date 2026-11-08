@@ -16,7 +16,7 @@ y empezar a desarrollar la app Android. Está pensado para Windows con WSL 2.
 | WSL 2 con Ubuntu 26.04 | El núcleo: compilación, pruebas, sanitizers, cobertura, fuzzing, análisis y biblioteca para Android. Es la misma versión de Ubuntu que usa la integración continua. |
 
 El código está en una sola copia, la de Windows. Ubuntu trabaja sobre ella a través de `/mnt/c`,
-pero compila en `~/.cache/malediction-companion/build`: es más rápido y evita la ruta con espacios
+pero compila en `~/.cache/seekers-companion/build`: es más rápido y evita la ruta con espacios
 (`My projects`), que da problemas a algunas herramientas de compilación.
 
 ## 1. Instalar WSL 2 y Ubuntu 26.04
@@ -132,7 +132,7 @@ activada.
 VS Code con la extensión WSL trabaja directamente dentro de Ubuntu: desde la carpeta del proyecto,
 `code .` lo abre conectado a WSL. Para el C++, la extensión clangd o la C/C++ de Microsoft, junto con
 CMake Tools. clangd necesita la base de datos de compilación: añade a sus argumentos
-`--compile-commands-dir=/home/TU_USUARIO/.cache/malediction-companion/build/asan`, con tu usuario
+`--compile-commands-dir=/home/TU_USUARIO/.cache/seekers-companion/build/asan`, con tu usuario
 de Ubuntu.
 
 ## 6. Compilar con MSVC en Windows (opcional)

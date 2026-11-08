@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
-  "name": "app-malediction",
+  "name": "seekers-companion",
   "version": "0.1.0",
   "description": "Compañero digital para partidas de Malediction: núcleo de reglas en C++",
   "license": "Apache-2.0",

@@ -3,7 +3,7 @@
 
 cmake_minimum_required(VERSION 3.25)
 
-project(app_malediction
+project(seekers_companion
     VERSION 0.1.0
     DESCRIPTION "Compañero digital para partidas de Malediction: núcleo de reglas en C++"
     LANGUAGES C CXX)
