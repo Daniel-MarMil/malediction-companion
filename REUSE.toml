@@ -11,6 +11,7 @@ path = [
   "CMakePresets.json",
   "content/test/**",
   "fuzz/corpus/**",
+  "examples/commands/**",
   "NOTICE",
 ]
 SPDX-FileCopyrightText = "2026 Daniel Martín Millet"

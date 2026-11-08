@@ -43,7 +43,7 @@ fi
 step "System packages"
 sudo apt-get update -qq
 sudo apt-get install -y -qq --no-install-recommends \
-    build-essential clang libclang-rt-dev clang-tidy clang-format cmake ninja-build git curl \
+    build-essential clang libclang-rt-dev clang-tidy clang-format clangd cmake ninja-build git curl \
     ca-certificates zip unzip tar pkg-config python3 python3-pip pipx \
     autoconf autoconf-archive automake libtool gdb valgrind cppcheck shellcheck yamllint
 

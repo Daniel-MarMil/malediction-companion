@@ -139,7 +139,7 @@ run_task() {
             ;;
         lint)
             setup
-            mapfile -t sources < <(find core tests fuzz -name '*.[ch]' -o -name '*.[ch]pp' | sort)
+            mapfile -t sources < <(find core tests fuzz examples -name '*.[ch]' -o -name '*.[ch]pp' | sort)
             clang-format --dry-run --Werror "${sources[@]}"
             cmake --preset tidy -B "$build_root/tidy" "${cmake_args[@]}"
             clang-tidy -p "$build_root/tidy" --quiet --warnings-as-errors='*' core/src/*.cpp

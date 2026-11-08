@@ -47,7 +47,7 @@ source ~/.bashrc
 
 The script runs once and can be run again to update. It installs:
 
-- the build and analysis packages (GCC, Clang, CMake, Ninja, clang-tidy, gdb, Valgrind, cppcheck);
+- the build and analysis packages (GCC, Clang, CMake, Ninja, clang-tidy, clangd, gdb, Valgrind, cppcheck);
 - gcovr, for coverage;
 - vcpkg, at the version pinned in `vcpkg.json`;
 - Android NDK r30;
@@ -68,7 +68,8 @@ tools/ci/ci.sh all             # everything continuous integration does
 ```
 
 The first time, vcpkg builds the dependencies and takes a few minutes; after that they are
-cached. `tools/ci/ci.sh` without arguments lists every task.
+cached. `tools/ci/ci.sh` without arguments lists every task. [`code-tour.md`](code-tour.md)
+explains what the tests cover and how to try the core by hand.
 
 To open the coverage report in the Windows browser:
 
@@ -126,13 +127,49 @@ When `getent hosts github.com` answers, run the task that failed again.
 
 For the TalkBack tests in phase 1, a real phone with USB debugging turned on is also useful.
 
-## 5. Editor for the core (optional)
+## 5. VS Code from WSL
 
-VS Code with the WSL extension works directly inside Ubuntu: from the project folder, `code .`
-opens it connected to WSL. For C++, use the clangd extension or Microsoft's C/C++ extension,
-together with CMake Tools. clangd needs the compilation database: add
-`--compile-commands-dir=/home/YOUR_USER/.cache/seekers-companion/build/asan` to its arguments,
-with your Ubuntu user name.
+VS Code runs on Windows and connects to Ubuntu: the files, the terminal, Git and the language
+extensions all work inside WSL, with the same tools that `tools/ci/ci.sh` uses.
+
+1. Install [VS Code](https://code.visualstudio.com) on **Windows**, not in Ubuntu. In the
+   installer, keep **Add to PATH** checked so that the `code` command also works from Ubuntu.
+2. In VS Code, install the **WSL** extension (`ms-vscode-remote.remote-wsl`).
+3. Open the project from the Ubuntu terminal:
+   ```sh
+   cd "/mnt/c/Users/Danie/Documents/My projects/App Malediction"
+   code .
+   ```
+   The first time, VS Code installs its server in Ubuntu. When the window is connected, the
+   bottom-left corner shows `WSL: Ubuntu-26.04`. If Ubuntu does not find `code`, close the
+   Ubuntu terminal and open a new one.
+4. If VS Code asks whether you trust the authors of the folder, trust it: in restricted mode the
+   clangd extension ignores its arguments.
+5. In that window, install the **clangd** extension (`llvm-vs-code-extensions.vscode-clangd`).
+   It installs on the Ubuntu side and gives completion, navigation, errors as you type and the
+   clang-tidy checks from `.clang-tidy`. Do not use it together with Microsoft's C/C++ extension:
+   both try to provide the same features. It uses the `clangd` that `setup-wsl.sh` installs
+   (or `sudo apt install clangd`).
+6. clangd needs the compilation database that CMake writes when it configures a build. Run
+   `tools/ci/ci.sh asan` once, open the Command Palette (F1), run **Preferences: Open Remote
+   Settings (JSON)** and add the following, with your Ubuntu user name (`echo $HOME` shows the
+   path):
+   ```json
+   {
+     "clangd.arguments": [
+       "--compile-commands-dir=/home/YOUR_USER/.cache/seekers-companion/build/asan",
+       "--clang-tidy"
+     ]
+   }
+   ```
+   These settings only apply to windows connected to WSL. Then run **clangd: Restart language
+   server** from the Command Palette.
+
+Use the terminal inside VS Code (**Terminal > New Terminal**) to build and test: it is a Bash
+terminal in Ubuntu that reads `~/.bashrc`, so `VCPKG_ROOT`, `MC_BUILD_ROOT` and
+`ANDROID_NDK_HOME` are set. Other VS Code processes do not read `~/.bashrc`, which is why this
+guide does not use VS Code tasks or CMake Tools to build. `.vscode/` is in `.gitignore`, so
+personal settings never reach the repository.
 
 ## 6. Build with MSVC on Windows (optional)
 
@@ -167,5 +204,6 @@ This checks that the core also builds with Microsoft's compiler.
 - [ ] `wsl -l -v` shows `Ubuntu-26.04` with version 2.
 - [ ] `tools/ci/ci.sh asan` passes every test.
 - [ ] `tools/ci/ci.sh android` produces `libmc_core.so` and passes the 16 KB check.
+- [ ] VS Code opens the project with `code .` and clangd finds the headers.
 - [ ] The emulator boots and `emulator -accel-check` shows WHPX.
 - [ ] (Optional) `ctest --preset dev` passes on Windows with MSVC.

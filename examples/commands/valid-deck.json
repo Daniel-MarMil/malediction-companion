@@ -1,0 +1,24 @@
+{
+  "cmd": "validate_deck",
+  "deck": {
+    "seeker": "T-SEEK-ASH",
+    "legacy": "T-LEG-ASH",
+    "terrain": "T-TER-01",
+    "main": [
+      { "card": "T-ASH-U01", "copies": 3 },
+      { "card": "T-ASH-U02", "copies": 3 },
+      { "card": "T-ASH-U03", "copies": 3 },
+      { "card": "T-ASH-U04", "copies": 3 },
+      { "card": "T-ASH-U05", "copies": 3 },
+      { "card": "T-ASH-U06", "copies": 3 },
+      { "card": "T-ASH-S01", "copies": 3 },
+      { "card": "T-ASH-S02", "copies": 3 },
+      { "card": "T-ASH-S03", "copies": 3 },
+      { "card": "T-ASH-I01", "copies": 3 }
+    ],
+    "side": [
+      { "card": "T-ASH-E01", "copies": 2 },
+      { "card": "T-NEU-I01", "copies": 2 }
+    ]
+  }
+}

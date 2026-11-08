@@ -37,10 +37,12 @@ include(McFindSodium)
 add_subdirectory(core)
 
 # Tests run on the development machine and in continuous integration,
-# not in Android builds.
+# not in Android builds. mc_cli, the command-line client in examples/, is built and
+# tested with them.
 if(MC_BUILD_TESTS AND NOT ANDROID AND NOT BUILD_SHARED_LIBS)
     enable_testing()
     add_subdirectory(tests)
+    add_subdirectory(examples)
 endif()
 
 if(MC_BUILD_FUZZERS)

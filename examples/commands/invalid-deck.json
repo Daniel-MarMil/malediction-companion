@@ -1,0 +1,15 @@
+{
+  "cmd": "validate_deck",
+  "deck": {
+    "seeker": "T-SEEK-ASH",
+    "legacy": "T-LEG-THORN",
+    "main": [
+      { "card": "T-ASH-U01", "copies": 4 },
+      { "card": "T-ASH-U02", "copies": 3 },
+      { "card": "T-ASH-L01", "copies": 1 },
+      { "card": "T-TIDE-U01", "copies": 2 },
+      { "card": "T-REL-01", "copies": 1 },
+      { "card": "NOT-IN-PACK", "copies": 1 }
+    ]
+  }
+}

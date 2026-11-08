@@ -19,14 +19,16 @@ Phase 0: the shared C++20 core.
 - Versioned rules packs (`mc-rules-pack` format 1) with a detached Ed25519 signature (ADR-06).
 - Deck validation (RF-06): Seeker, Legacy and terrain; 30 to 50 cards; sigils; copies per rank;
   a side deck of 7. The limits come from the pack, not from the code.
-- C API for the apps (ADR-11).
+- C API for the apps (ADR-11), and `mc_cli`, a command-line client to try it by hand.
 - Tests with GoogleTest and RapidCheck, sanitizers, coverage and fuzzing with libFuzzer.
 
 The Android app (Kotlin with Jetpack Compose) comes next, and then the iOS app (Swift with
 SwiftUI). The iOS app needs a Mac with Xcode; until there is one, work continues on Android.
 
-Requirement IDs (RF-xx for functional and RNF-xx for non-functional requirements) and the phases
-refer to the project's architecture and requirements document, which is written in Spanish.
+[`docs/code-tour.md`](docs/code-tour.md) explains how the code is organized, how a command flows
+through the core, what is tested and how to try it. Requirement IDs (RF-xx for functional and
+RNF-xx for non-functional requirements) and the phases refer to the project's architecture and
+requirements document, which is written in Spanish.
 
 ## Official content
 
@@ -47,10 +49,11 @@ core/                 C++20 core (no user interface, no I/O)
   include/mc/core/      Domain types: cards, rules pack, deck, validation
   src/                  Implementation
 tests/                Tests (GoogleTest, RapidCheck) and the C11 header check
+examples/             mc_cli, a command-line client for the C API, and example commands
 fuzz/                 libFuzzer targets and seed corpus
 content/test/         Made-up rules pack for the tests
 content/official/     Private official content (ignored by git)
-docs/                 Architecture decisions (adr/) and local environment guide
+docs/                 Architecture decisions (adr/), code tour and local environment guide
 tools/ci/             Continuous integration tasks, also for local use
 tools/dev/            Local environment setup
 .woodpecker/          Woodpecker CI workflows
@@ -58,8 +61,8 @@ tools/dev/            Local environment setup
 
 ## Building
 
-To set up the full environment on Windows (WSL 2, Android Studio and, optionally, MSVC), follow
-[`docs/local-environment.md`](docs/local-environment.md).
+To set up the full environment on Windows (WSL 2, VS Code, Android Studio and, optionally,
+MSVC), follow [`docs/local-environment.md`](docs/local-environment.md).
 
 You need CMake 3.25 or later, Ninja and a C++20 compiler (GCC 13 or later, Clang 18 or later, or
 the MSVC of Visual Studio 2022 or 2026). The dependencies come from [vcpkg](https://vcpkg.io) in
@@ -146,6 +149,12 @@ Each issue carries a stable code that the app translates: `seeker_missing`,
 `terrain_wrong_type`, `unknown_card`, `invalid_copies`, `card_type_not_allowed`,
 `rank_not_allowed`, `sigil_mismatch`, `too_many_copies`, `deck_too_small`, `deck_too_large` and
 `side_too_large`. The `detail` text is in English and meant for debugging, not for players.
+
+`mc_cli` runs these commands from the command line, for example:
+
+```sh
+build/dev/examples/mc_cli content/test/rules-pack.test.json examples/commands/invalid-deck.json
+```
 
 ## Continuous integration
 
