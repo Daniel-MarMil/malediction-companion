@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
 #
-# Fuzzing con libFuzzer de todo lo que llega al núcleo desde fuera (RNF-19): paquetes de
-# reglas y comandos JSON. Ejemplo, durante un minuto:
+# libFuzzer fuzzing of everything that reaches the core from outside (RNF-19): rules
+# packs and JSON commands. Example, for one minute:
 #   build/fuzz/fuzz/mc_fuzz_dispatch -max_total_time=60 fuzz/corpus/dispatch
 
 foreach(name rules_pack dispatch)

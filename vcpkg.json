@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "seekers-companion",
   "version": "0.1.0",
-  "description": "Compañero digital para partidas de Malediction: núcleo de reglas en C++",
+  "description": "Digital companion for Malediction games: rules core in C++",
   "license": "Apache-2.0",
   "dependencies": [
     "libsodium",
@@ -10,7 +10,7 @@
   ],
   "features": {
     "tests": {
-      "description": "Pruebas del núcleo con GoogleTest y RapidCheck",
+      "description": "Core tests with GoogleTest and RapidCheck",
       "dependencies": [
         "gtest",
         "rapidcheck"

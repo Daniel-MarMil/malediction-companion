@@ -1,16 +1,16 @@
 Seekers Companion
 Copyright 2026 Daniel Martín Millet
 
-Este producto incluye software desarrollado por Daniel Martín Millet bajo la
-Licencia Apache, versión 2.0 (ver LICENSE).
+This product includes software developed by Daniel Martín Millet under the
+Apache License, Version 2.0 (see LICENSE).
 
-Malediction, sus cartas, textos, imágenes, logotipos, tipografías, colores e
-iconos pertenecen a Loot Studios. Este proyecto no está afiliado a Loot Studios
-ni cuenta con su respaldo. El repositorio no contiene contenido oficial de
-Malediction: las cartas de content/test son ficticias.
+Malediction and its cards, texts, images, logos, fonts, colors and icons
+belong to Loot Studios. This project is not affiliated with or endorsed by
+Loot Studios. The repository holds no official Malediction content: the
+cards in content/test are fictional.
 
-Dependencias de terceros, cada una con su propia licencia:
+Third-party dependencies, each under its own license:
   - libsodium (ISC)
   - nlohmann/json (MIT)
-  - GoogleTest (BSD-3-Clause), solo en las pruebas
-  - RapidCheck (BSD-2-Clause), solo en las pruebas
+  - GoogleTest (BSD-3-Clause), tests only
+  - RapidCheck (BSD-2-Clause), tests only

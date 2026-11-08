@@ -2,8 +2,8 @@
  * SPDX-FileCopyrightText: 2026 Daniel Martín Millet
  * SPDX-License-Identifier: Apache-2.0
  *
- * Símbolos que exporta la biblioteca compartida: solo la API en C (ADR-11).
- * Todo lo demás, incluidas las plantillas de la biblioteca estándar, queda oculto.
+ * Symbols exported by the shared library: only the C API (ADR-11).
+ * Everything else, including standard library templates, stays hidden.
  */
 {
   global:

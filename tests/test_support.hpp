@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 // SPDX-License-Identifier: Apache-2.0
 //
-// Utilidades comunes de las pruebas. El paquete de prueba solo tiene cartas ficticias.
+// Shared test helpers. The test pack only has made-up cards.
 
 #pragma once
 
@@ -25,7 +25,7 @@ namespace mc::test {
 inline std::string read_file(const char* path) {
     std::ifstream file(path, std::ios::binary);
     if (!file) {
-        throw std::runtime_error(std::string("no se puede abrir ") + path);
+        throw std::runtime_error(std::string("cannot open ") + path);
     }
     std::ostringstream content;
     content << file.rdbuf();
@@ -50,7 +50,7 @@ inline std::vector<core::DeckEntry> entries(std::initializer_list<std::pair<cons
     return result;
 }
 
-/// Mazo válido de ceniza: 6 unidades, 3 hechizos y 1 objeto básicos, 3 copias de cada (30 cartas).
+/// A valid Ash deck: 6 units, 3 spells and 1 item, all basic, with 3 copies of each (30 cards).
 inline core::Deck valid_ash_deck() {
     core::Deck deck;
     deck.seeker_id = "T-SEEK-ASH";
@@ -69,7 +69,7 @@ inline core::Deck valid_ash_deck() {
     return deck;
 }
 
-/// Pares (regla, carta) ordenados: sirven para comparar resultados sin depender del orden.
+/// Sorted (rule, card) pairs, used to compare results regardless of their order.
 inline std::vector<std::pair<core::Rule, std::string>> rule_set(const std::vector<core::ValidationIssue>& issues) {
     std::vector<std::pair<core::Rule, std::string>> result;
     result.reserve(issues.size());

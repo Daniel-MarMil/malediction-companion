@@ -22,7 +22,7 @@ std::vector<ValidationIssue> validate(const Deck& deck) {
     return validate_deck(test_pack(), deck);
 }
 
-/// El paquete de prueba con otras reglas de mazo.
+/// The test pack with different deck rules.
 RulesPack pack_with_rules(const char* key, bool value) {
     auto json = nlohmann::json::parse(mc::test::test_pack_json());
     json["rules"][key] = value;
@@ -48,13 +48,13 @@ TEST(DeckValidator, ChecksTheSeeker) {
     deck.seeker_id = "T-ASH-U01";
     auto issues = validate(deck);
     EXPECT_TRUE(has_issue(issues, Rule::SeekerWrongType, "T-ASH-U01"));
-    // Sin Seeker válido no se comparan sigilos ni la Legacy.
+    // Without a valid Seeker, neither the sigils nor the Legacy are compared.
     EXPECT_FALSE(has_issue(issues, Rule::SigilMismatch));
     EXPECT_FALSE(has_issue(issues, Rule::LegacyMismatch));
 
-    deck.seeker_id = "T-SEEK-NO-EXISTE";
+    deck.seeker_id = "T-SEEK-UNKNOWN";
     issues = validate(deck);
-    EXPECT_TRUE(has_issue(issues, Rule::UnknownCard, "T-SEEK-NO-EXISTE"));
+    EXPECT_TRUE(has_issue(issues, Rule::UnknownCard, "T-SEEK-UNKNOWN"));
 }
 
 TEST(DeckValidator, ChecksTheLegacy) {
@@ -68,8 +68,8 @@ TEST(DeckValidator, ChecksTheLegacy) {
     deck.legacy_id = "T-LEG-THORN";
     EXPECT_TRUE(has_issue(validate(deck), Rule::LegacyMismatch, "T-LEG-THORN"));
 
-    deck.legacy_id = "T-LEG-NO-EXISTE";
-    EXPECT_TRUE(has_issue(validate(deck), Rule::UnknownCard, "T-LEG-NO-EXISTE"));
+    deck.legacy_id = "T-LEG-UNKNOWN";
+    EXPECT_TRUE(has_issue(validate(deck), Rule::UnknownCard, "T-LEG-UNKNOWN"));
 }
 
 TEST(DeckValidator, ChecksTheTerrain) {
@@ -80,14 +80,14 @@ TEST(DeckValidator, ChecksTheTerrain) {
     deck.terrain_id = "T-ASH-U01";
     EXPECT_TRUE(has_issue(validate(deck), Rule::TerrainWrongType, "T-ASH-U01"));
 
-    // El terreno puede ser de otra facción.
+    // The terrain can belong to another faction.
     deck.terrain_id = "T-TER-02";
     EXPECT_TRUE(validate(deck).empty());
 }
 
 TEST(DeckValidator, ChecksTheDeckSize) {
     Deck deck = valid_ash_deck();
-    deck.main.back().copies = 2;  // 29 cartas
+    deck.main.back().copies = 2;  // 29 cards
     EXPECT_TRUE(has_issue(validate(deck), Rule::DeckTooSmall));
 
     deck = valid_ash_deck();
@@ -101,11 +101,11 @@ TEST(DeckValidator, ChecksTheDeckSize) {
                                 {"T-TIDE-U01", 3},
                                 {"T-TIDE-U02", 3},
                                 {"T-TIDE-E01", 1},
-                                {"T-DUAL-E01", 2}});  // 20 más: 50 cartas, el máximo
+                                {"T-DUAL-E01", 2}});  // 20 more: 50 cards, the maximum
     deck.main.insert(deck.main.end(), extra.begin(), extra.end());
     EXPECT_TRUE(validate(deck).empty());
 
-    deck.main.push_back({"T-TIDE-U03", 1});  // 51 cartas
+    deck.main.push_back({"T-TIDE-U03", 1});  // 51 cards
     const auto issues = validate(deck);
     EXPECT_TRUE(has_issue(issues, Rule::DeckTooLarge));
     EXPECT_EQ(issues.size(), 1U);
@@ -179,7 +179,7 @@ TEST(DeckValidator, ChecksSigils) {
     EXPECT_TRUE(has_issue(issues, Rule::SigilMismatch, "T-TIDE-U01"));
     EXPECT_TRUE(has_issue(issues, Rule::SigilMismatch, "T-DUAL-E01"));
 
-    // Un Seeker de dos facciones admite las cartas de cada una y las de ambas.
+    // A Seeker with two factions allows the cards of each faction and the cards of both.
     deck.seeker_id = "T-SEEK-DUAL";
     deck.legacy_id = "T-LEG-DUAL";
     EXPECT_TRUE(validate(deck).empty());
@@ -203,8 +203,8 @@ TEST(DeckValidator, ReportsInvalidCopiesAndUnknownCards) {
     Deck deck = valid_ash_deck();
     deck.main.push_back({"T-ASH-E01", 0});
     deck.main.push_back({"T-ASH-E02", -3});
-    deck.main.push_back({"NO-EXISTE", 1});
-    deck.main.push_back({"NO-EXISTE", 1});
+    deck.main.push_back({"NOT-IN-PACK", 1});
+    deck.main.push_back({"NOT-IN-PACK", 1});
     const auto issues = validate(deck);
     EXPECT_TRUE(has_issue(issues, Rule::InvalidCopies, "T-ASH-E01"));
     EXPECT_TRUE(has_issue(issues, Rule::InvalidCopies, "T-ASH-E02"));

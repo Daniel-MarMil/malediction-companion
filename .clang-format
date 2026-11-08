@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
 #
-# Estilo del código C y C++. Comprobación: clang-format --dry-run --Werror <ficheros>
+# C and C++ code style. Check with: clang-format --dry-run --Werror <files>
 BasedOnStyle: Google
 Language: Cpp
 Standard: c++20

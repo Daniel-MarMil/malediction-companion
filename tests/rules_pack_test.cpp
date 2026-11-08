@@ -15,17 +15,17 @@ namespace {
 using namespace mc::core;
 using nlohmann::json;
 
-/// Paquete mínimo válido; cada prueba lo estropea de una forma.
+/// A minimal valid pack; each test breaks it in one way.
 json minimal_pack() {
     return json::parse(R"({
         "format": "mc-rules-pack", "format_version": 1,
-        "id": "mini", "version": "1", "date": "2026-11-07", "origin": "pruebas", "license": "Apache-2.0",
+        "id": "mini", "version": "1", "date": "2026-11-07", "origin": "tests", "license": "Apache-2.0",
         "rules": {"deck_min": 30, "deck_max": 50, "side_max": 7,
                   "copy_limits": {"basic": 3, "elite": 2, "unique": 1}},
         "cards": [
             {"id": "S", "name": "Seeker", "type": "seeker", "rank": "legendary", "sigils": ["ash"]},
             {"id": "L", "name": "Legacy", "type": "legacy", "seeker": "S", "starting_echo": 4},
-            {"id": "U", "name": "Unidad", "type": "unit", "rank": "basic", "cost": 2, "sigils": ["ash"]}
+            {"id": "U", "name": "Unit", "type": "unit", "rank": "basic", "cost": 2, "sigils": ["ash"]}
         ]
     })");
 }
@@ -33,7 +33,7 @@ json minimal_pack() {
 void expect_rejected(const json& pack, const std::string& fragment) {
     try {
         (void)RulesPack::parse(pack.dump());
-        ADD_FAILURE() << "se esperaba PackError con: " << fragment;
+        ADD_FAILURE() << "expected a PackError containing: " << fragment;
     } catch (const PackError& error) {
         EXPECT_NE(std::string(error.what()).find(fragment), std::string::npos) << error.what();
     }
@@ -71,7 +71,7 @@ TEST(RulesPack, FindsCardsById) {
     EXPECT_EQ(unit->rank, Rank::Elite);
     EXPECT_EQ(unit->cost, 4);
 
-    EXPECT_EQ(pack.find("NO-EXISTE"), nullptr);
+    EXPECT_EQ(pack.find("NOT-IN-PACK"), nullptr);
     EXPECT_EQ(pack.find(""), nullptr);
 }
 
@@ -84,7 +84,7 @@ TEST(RulesPack, SortsAndDeduplicatesSigils) {
 
 TEST(RulesPack, AppliesDefaults) {
     json pack = minimal_pack();
-    pack["cards"].push_back({{"id", "R"}, {"name", "Reliquia"}, {"type", "relic"}});
+    pack["cards"].push_back({{"id", "R"}, {"name", "Relic"}, {"type", "relic"}});
     const RulesPack parsed = RulesPack::parse(pack.dump());
     const Card* relic = parsed.find("R");
     ASSERT_NE(relic, nullptr);
@@ -113,7 +113,7 @@ TEST(RulesPack, RejectsInvalidJson) {
 
 TEST(RulesPack, RejectsWrongFormat) {
     json pack = minimal_pack();
-    pack["format"] = "otro";
+    pack["format"] = "other";
     expect_rejected(pack, "format");
 
     pack = minimal_pack();
@@ -171,7 +171,7 @@ TEST(RulesPack, RejectsBadRules) {
     expect_rejected(pack, "copy_limits.basic");
 
     pack = minimal_pack();
-    pack["rules"]["unaligned_cards_allowed"] = "sí";
+    pack["rules"]["unaligned_cards_allowed"] = "yes";
     expect_rejected(pack, "unaligned_cards_allowed");
 }
 
@@ -186,7 +186,7 @@ TEST(RulesPack, RejectsBadCards) {
 
     pack = minimal_pack();
     pack["cards"].push_back(pack["cards"][2]);
-    expect_rejected(pack, "repetido");
+    expect_rejected(pack, "duplicate");
 
     pack = minimal_pack();
     pack["cards"][2]["type"] = "creature";
@@ -235,12 +235,12 @@ TEST(RulesPack, RejectsLegaciesWithoutTheirSeeker) {
     expect_rejected(pack, "cards[1].starting_echo");
 
     pack = minimal_pack();
-    pack["cards"][1]["seeker"] = "NO-EXISTE";
-    expect_rejected(pack, "NO-EXISTE");
+    pack["cards"][1]["seeker"] = "NOT-IN-PACK";
+    expect_rejected(pack, "NOT-IN-PACK");
 
     pack = minimal_pack();
     pack["cards"][1]["seeker"] = "U";
-    expect_rejected(pack, "Seeker que no existe");
+    expect_rejected(pack, "Seeker that does not exist");
 }
 
 }  // namespace

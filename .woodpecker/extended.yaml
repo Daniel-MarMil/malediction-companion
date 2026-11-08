@@ -1,18 +1,18 @@
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
 #
-# Pruebas largas, una vez por semana o a mano: ThreadSanitizer, Release, fuzzing y
-# biblioteca para Android con el NDK r30, alineada a 16 KB (RNF-19 y RNF-20).
-# Para la ejecución semanal, crea en Woodpecker una tarea programada (Cron) llamada
-# «semanal». Antes de activarla, fija la imagen por su digest (ubuntu:26.04@sha256:...).
+# Long-running checks, once a week or on demand: ThreadSanitizer, Release, fuzzing and the
+# Android library built with NDK r30 and aligned to 16 KB (RNF-19 and RNF-20).
+# For the weekly run, create a scheduled task (Cron) named "weekly" in Woodpecker.
+# Before enabling it, pin the image by its digest (ubuntu:26.04@sha256:...).
 
 when:
   - event: cron
-    cron: semanal
+    cron: weekly
   - event: manual
 
 steps:
-  - name: tsan-y-release
+  - name: tsan-and-release
     image: ubuntu:26.04
     commands:
       - tools/ci/ci.sh tsan release

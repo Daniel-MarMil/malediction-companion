@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
 #
-# Núcleo compartido: dominio y reglas, sin interfaz gráfica ni E/S (ADR-01 y ADR-11).
+# Shared core: domain and rules, with no user interface and no I/O (ADR-01 and ADR-11).
 
 add_library(mc_core
     src/card.cpp
@@ -23,13 +23,13 @@ if(BUILD_SHARED_LIBS)
     target_compile_definitions(mc_core PUBLIC MC_SHARED)
 endif()
 
-# Solo la API en C es visible desde fuera de la biblioteca (ADR-11).
+# Only the C API is visible from outside the library (ADR-11).
 set_target_properties(mc_core PROPERTIES
     CXX_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN ON)
 
-# En la biblioteca compartida (Android, Linux), una lista de símbolos oculta también las
-# plantillas de la biblioteca estándar que, si no, se exportarían.
+# In the shared library (Android, Linux), a symbol list also hides the standard library
+# templates that would otherwise be exported.
 if(BUILD_SHARED_LIBS AND NOT APPLE AND NOT MSVC)
     set(_mc_symbol_map "${CMAKE_CURRENT_SOURCE_DIR}/mc_core.map")
     target_link_options(mc_core PRIVATE "LINKER:--version-script=${_mc_symbol_map}")

@@ -1,12 +1,12 @@
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
 #
-# Opciones de compilación comunes. RNF-19: avisos como errores, sanitizers y cobertura.
-# RNF-20: bibliotecas para Android alineadas a páginas de 16 KB.
+# Common build options. RNF-19: warnings as errors, sanitizers and coverage.
+# RNF-20: Android libraries aligned to 16 KB pages.
 
 if(MC_SANITIZERS)
     if(MSVC)
-        message(WARNING "MC_SANITIZERS solo funciona con GCC y Clang; se ignora con MSVC")
+        message(WARNING "MC_SANITIZERS only works with GCC and Clang; it is ignored with MSVC")
     else()
         string(REPLACE "," ";" _mc_sanitizer_list "${MC_SANITIZERS}")
         list(JOIN _mc_sanitizer_list "," _mc_sanitizer_flag)
@@ -17,7 +17,7 @@ endif()
 
 if(MC_COVERAGE)
     if(MSVC)
-        message(WARNING "MC_COVERAGE solo funciona con GCC y Clang; se ignora con MSVC")
+        message(WARNING "MC_COVERAGE only works with GCC and Clang; it is ignored with MSVC")
     else()
         add_compile_options(--coverage -O0 -g)
         add_link_options(--coverage)
@@ -25,12 +25,12 @@ if(MC_COVERAGE)
 endif()
 
 if(ANDROID)
-    # El NDK r28 o posterior ya alinea a 16 KB; con versiones anteriores hacen falta estas opciones.
+    # NDK r28 and later already align to 16 KB; older versions need these options.
     add_link_options(-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384)
 endif()
 
-# Avisos estrictos para el código propio. Las dependencias de vcpkg entran como cabeceras
-# de sistema, así que sus avisos no cuentan.
+# Strict warnings for our own code. vcpkg dependencies come in as system headers,
+# so their warnings do not count.
 function(mc_apply_compiler_options target)
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /utf-8 $<$<COMPILE_LANGUAGE:CXX>:/permissive->)
@@ -42,8 +42,8 @@ function(mc_apply_compiler_options target)
             -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wshadow
             -Wcast-align -Wdouble-promotion -Wformat=2 -Wimplicit-fallthrough
             $<$<COMPILE_LANGUAGE:CXX>:-Wnon-virtual-dtor -Wold-style-cast -Woverloaded-virtual>)
-        # En GCC, -Wnull-dereference da falsos positivos con -O2 y -O3 dentro de código de
-        # terceros ya expandido (por ejemplo, nlohmann::json), así que solo se usa con Clang.
+        # With GCC, -Wnull-dereference gives false positives at -O2 and -O3 inside inlined
+        # third-party code (for example, nlohmann::json), so it is only used with Clang.
         if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             target_compile_options(${target} PRIVATE -Wnull-dereference)
         endif()

@@ -9,7 +9,7 @@
 namespace mc::core {
 namespace {
 
-// Nombres en los paquetes de reglas. Son códigos estables en inglés, como en el reglamento.
+// Names used in rules packs. They are stable English codes, as in the rules.
 constexpr std::array<std::pair<CardType, std::string_view>, 7> card_type_names{{
     {CardType::Seeker, "seeker"},
     {CardType::Legacy, "legacy"},

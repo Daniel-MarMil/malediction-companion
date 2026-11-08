@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 // SPDX-License-Identifier: Apache-2.0
 //
-// Pruebas de la API en C tal como la usan Kotlin (por JNI) y Swift (ADR-11, RNF-21).
+// Tests for the C API as Kotlin (through JNI) and Swift use it (ADR-11, RNF-21).
 
 #include "mc/mc_api.h"
 #include "test_support.hpp"
@@ -23,7 +23,7 @@ namespace {
 
 using nlohmann::json;
 
-/// Búfer devuelto por el núcleo; se libera solo con mc_buffer_free.
+/// A buffer returned by the core; it is freed only with mc_buffer_free.
 struct Buffer {
     Buffer() = default;
     Buffer(const Buffer&) = delete;
@@ -43,7 +43,7 @@ const uint8_t* bytes(std::string_view text) {
     return reinterpret_cast<const uint8_t*>(text.data());
 }
 
-/// Sesión con el paquete de prueba; se destruye sola.
+/// A session with the test pack; it is destroyed automatically.
 class Session {
 public:
     Session() {
@@ -145,12 +145,12 @@ TEST(CApi, ValidatesADeck) {
 TEST(CApi, AnswersBadCommandsWithAnError) {
     const Session session;
     const std::vector<std::pair<std::string, std::string>> cases = {
-        {"no es json", "invalid_json"},
+        {"not json", "invalid_json"},
         {"", "invalid_json"},
         {"\"\xff\"", "invalid_json"},
         {"[]", "missing_cmd"},
         {R"({"cmd":42})", "missing_cmd"},
-        {R"({"cmd":"borrar_todo"})", "unknown_command"},
+        {R"({"cmd":"delete_everything"})", "unknown_command"},
         {R"({"cmd":"validate_deck"})", "bad_deck"},
         {R"({"cmd":"validate_deck","deck":[]})", "bad_deck"},
         {R"({"cmd":"validate_deck","deck":{"seeker":1}})", "bad_deck"},
@@ -200,7 +200,7 @@ TEST(CApi, RejectsOversizedCommands) {
 }
 
 TEST(CApi, ExplainsWhyAPackIsRejected) {
-    const std::string pack = R"({"format":"otro"})";
+    const std::string pack = R"({"format":"other"})";
     mc_session* session = nullptr;
     Buffer error;
     EXPECT_EQ(mc_session_create(bytes(pack), pack.size(), &session, &error.data, &error.size), MC_ERR_BAD_PACK);
@@ -210,7 +210,7 @@ TEST(CApi, ExplainsWhyAPackIsRejected) {
     EXPECT_EQ(reply["error"], "bad_pack");
     EXPECT_NE(reply["detail"].get<std::string>().find("format"), std::string::npos);
 
-    // Sin búfer de error también funciona.
+    // It also works without an error buffer.
     EXPECT_EQ(mc_session_create(bytes(pack), pack.size(), &session, nullptr, nullptr), MC_ERR_BAD_PACK);
 }
 
@@ -241,7 +241,7 @@ TEST(CApi, ChecksItsArguments) {
     EXPECT_EQ(mc_session_dispatch(valid.get(), bytes("{}"), 2, &out.data, nullptr), MC_ERR_INVALID_ARGUMENT);
     EXPECT_EQ(out.data, nullptr);
 
-    // Liberar NULL no hace nada.
+    // Freeing NULL does nothing.
     mc_buffer_free(nullptr);
     mc_session_destroy(nullptr);
 }

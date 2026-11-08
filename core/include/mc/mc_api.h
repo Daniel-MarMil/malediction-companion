@@ -2,15 +2,15 @@
  * SPDX-FileCopyrightText: 2026 Daniel Martín Millet
  * SPDX-License-Identifier: Apache-2.0
  *
- * API en C del núcleo (ADR-11): la única frontera entre el núcleo C++ y las apps.
- * Kotlin la llama a través de una capa JNI fina y Swift la importa directamente.
+ * C API of the core (ADR-11): the only boundary between the C++ core and the apps.
+ * Kotlin calls it through a thin JNI layer and Swift imports it directly.
  *
- * Reglas de la frontera:
- *  - Ninguna función lanza excepciones; todas devuelven un mc_status.
- *  - Los comandos y las respuestas son JSON en UTF-8, pasados como bytes.
- *  - Una sesión no es segura entre hilos: úsala desde un solo hilo o actor.
- *  - El núcleo no crea hilos ni llama de vuelta a la app.
- *  - Todo búfer que devuelve el núcleo se libera con mc_buffer_free.
+ * Boundary rules:
+ *  - No function throws exceptions; every function returns an mc_status.
+ *  - Commands and responses are UTF-8 JSON, passed as bytes.
+ *  - A session is not thread-safe: use it from a single thread or actor.
+ *  - The core creates no threads and never calls back into the app.
+ *  - Every buffer the core returns is freed with mc_buffer_free.
  */
 #ifndef MC_API_H
 #define MC_API_H
@@ -37,54 +37,54 @@ extern "C" {
 #  define MC_NOEXCEPT
 #endif
 
-/* Es una cabecera C: typedef y enum sin ámbito ni tipo base son lo correcto aquí. */
+/* This is a C header: typedefs and unscoped enums without an underlying type are right here. */
 /* NOLINTBEGIN(modernize-use-using, performance-enum-size, cppcoreguidelines-use-enum-class) */
 
-/** Sesión opaca: un paquete de reglas cargado y su estado. */
+/** Opaque session: a loaded rules pack and its state. */
 typedef struct mc_session mc_session;
 
-/** Resultado de cada llamada. */
+/** Result of every call. */
 typedef enum mc_status {
     MC_OK = 0,
-    MC_ERR_INVALID_ARGUMENT = 1, /**< Puntero nulo o combinación de argumentos imposible. */
-    MC_ERR_BAD_PACK = 2,         /**< El paquete de reglas o su firma no son válidos. */
-    MC_ERR_BAD_COMMAND = 3,      /**< El comando no es JSON válido, no existe o sus datos no sirven. */
-    MC_ERR_INTERNAL = 4          /**< Error inesperado del núcleo, por ejemplo sin memoria. */
+    MC_ERR_INVALID_ARGUMENT = 1, /**< Null pointer or an impossible combination of arguments. */
+    MC_ERR_BAD_PACK = 2,         /**< The rules pack or its signature is not valid. */
+    MC_ERR_BAD_COMMAND = 3,      /**< The command is not valid JSON, does not exist or carries unusable data. */
+    MC_ERR_INTERNAL = 4          /**< Unexpected core error, for example out of memory. */
 } mc_status;
 
 /* NOLINTEND(modernize-use-using, performance-enum-size, cppcoreguidelines-use-enum-class) */
 
-/** Versión del núcleo, por ejemplo "0.1.0". Es una cadena estática: no se libera. */
+/** Core version, for example "0.1.0". It is a static string: do not free it. */
 MC_API const char* mc_version(void) MC_NOEXCEPT;
 
 /**
- * Comprueba la firma Ed25519 separada de un paquete (ADR-06).
- * Devuelve MC_OK si la firma es válida y MC_ERR_BAD_PACK si no lo es.
+ * Checks the detached Ed25519 signature of a pack (ADR-06).
+ * Returns MC_OK if the signature is valid and MC_ERR_BAD_PACK if it is not.
  */
 MC_API mc_status mc_pack_verify(const uint8_t* pack, size_t pack_len, const uint8_t* signature, size_t signature_len,
                                 const uint8_t* public_key, size_t public_key_len) MC_NOEXCEPT;
 
 /**
- * Crea una sesión con un paquete de reglas en JSON.
- * Si el paquete no es válido devuelve MC_ERR_BAD_PACK y, cuando out_error no es NULL,
- * deja en *out_error un JSON con el motivo, que hay que liberar con mc_buffer_free.
- * out_error y out_error_len son opcionales, pero van juntos.
+ * Creates a session from a JSON rules pack.
+ * If the pack is not valid it returns MC_ERR_BAD_PACK and, when out_error is not NULL,
+ * stores in *out_error a JSON object with the reason, to be freed with mc_buffer_free.
+ * out_error and out_error_len are optional, but must be given together.
  */
 MC_API mc_status mc_session_create(const uint8_t* pack, size_t pack_len, mc_session** out_session, uint8_t** out_error,
                                    size_t* out_error_len) MC_NOEXCEPT;
 
 /**
- * Ejecuta un comando JSON, por ejemplo {"cmd":"validate_deck","deck":{...}}.
- * Con MC_OK o MC_ERR_BAD_COMMAND, *out recibe la respuesta JSON (UTF-8, terminada en
- * un byte nulo que *out_len no cuenta) y hay que liberarla con mc_buffer_free.
+ * Runs a JSON command, for example {"cmd":"validate_deck","deck":{...}}.
+ * With MC_OK or MC_ERR_BAD_COMMAND, *out receives the JSON response (UTF-8, terminated by
+ * a null byte that *out_len does not count), to be freed with mc_buffer_free.
  */
 MC_API mc_status mc_session_dispatch(mc_session* session, const uint8_t* cmd, size_t cmd_len, uint8_t** out,
                                      size_t* out_len) MC_NOEXCEPT;
 
-/** Libera un búfer devuelto por el núcleo. Admite NULL. */
+/** Frees a buffer returned by the core. Accepts NULL. */
 MC_API void mc_buffer_free(uint8_t* buffer) MC_NOEXCEPT;
 
-/** Destruye una sesión. Admite NULL. */
+/** Destroys a session. Accepts NULL. */
 MC_API void mc_session_destroy(mc_session* session) MC_NOEXCEPT;
 
 #ifdef __cplusplus

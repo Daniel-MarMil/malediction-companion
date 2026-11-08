@@ -13,7 +13,7 @@
 
 namespace mc::core {
 
-/// Regla de construcción incumplida. La app traduce el código; el detalle es para depurar.
+/// A deck-building rule that was broken. The app translates the code; the detail is for debugging.
 enum class Rule : std::uint8_t {
     SeekerMissing,
     SeekerWrongType,
@@ -33,16 +33,16 @@ enum class Rule : std::uint8_t {
     SideTooLarge,
 };
 
-/// Código estable de una regla, por ejemplo "deck_too_small".
+/// Stable code of a rule, for example "deck_too_small".
 [[nodiscard]] std::string_view to_string(Rule rule) noexcept;
 
 struct ValidationIssue {
     Rule rule;
-    std::string card_id;  ///< Vacío si la regla no se refiere a una carta concreta.
+    std::string card_id;  ///< Empty if the rule is not about a specific card.
     std::string detail;
 };
 
-/// Valida un mazo con las reglas del paquete (RF-06). Una lista vacía significa mazo válido.
+/// Validates a deck against the pack's rules (RF-06). An empty list means the deck is valid.
 [[nodiscard]] std::vector<ValidationIssue> validate_deck(const RulesPack& pack, const Deck& deck);
 
 }  // namespace mc::core

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
-"""Comprueba que las bibliotecas ELF están alineadas a páginas de 16 KB (RNF-20).
+"""Checks that ELF libraries are aligned to 16 KB pages (RNF-20).
 
-Google Play exige que las apps que se dirigen a Android 15 (API 35) o posterior funcionen
-con páginas de 16 KB en dispositivos de 64 bits: cada segmento LOAD de sus bibliotecas
-nativas debe estar alineado a 16384 bytes (2**14) o más. Lee las cabeceras ELF directamente, sin herramientas del NDK, para que
-funcione igual en Linux, macOS y Windows.
+Google Play requires apps that target Android 15 (API 35) or later to work with 16 KB
+pages on 64-bit devices: every LOAD segment of their native libraries must be aligned to
+16384 bytes (2**14) or more. The script reads the ELF headers directly, without NDK tools,
+so it works the same on Linux, macOS and Windows.
 
-Uso: check_page_alignment.py RUTA [RUTA ...]   (ficheros .so o carpetas que los contengan)
+Usage: check_page_alignment.py PATH [PATH ...]   (.so files or folders that contain them)
 """
 
 from __future__ import annotations
@@ -22,19 +22,19 @@ PT_LOAD = 1
 
 
 def load_alignments(path: Path) -> list[int]:
-    """Devuelve la alineación de cada segmento LOAD de un fichero ELF."""
+    """Returns the alignment of every LOAD segment of an ELF file."""
     data = path.read_bytes()
     if data[:4] != b"\x7fELF":
-        raise ValueError("no es un fichero ELF")
+        raise ValueError("not an ELF file")
     elf_class, byte_order = data[4], data[5]
     if elf_class not in (1, 2) or byte_order not in (1, 2):
-        raise ValueError("cabecera ELF desconocida")
+        raise ValueError("unknown ELF header")
     endian = "<" if byte_order == 1 else ">"
-    if elf_class == 2:  # ELF de 64 bits
+    if elf_class == 2:  # 64-bit ELF
         phoff, = struct.unpack_from(endian + "Q", data, 0x20)
         phentsize, phnum = struct.unpack_from(endian + "HH", data, 0x36)
         header, align_offset = endian + "IIQQQQQQ", 7
-    else:  # ELF de 32 bits
+    else:  # 32-bit ELF
         phoff, = struct.unpack_from(endian + "I", data, 0x1C)
         phentsize, phnum = struct.unpack_from(endian + "HH", data, 0x2A)
         header, align_offset = endian + "IIIIIIII", 7
@@ -60,7 +60,7 @@ def main(argv: list[str]) -> int:
         return 2
     targets = libraries(argv)
     if not targets:
-        print("No se ha encontrado ninguna biblioteca .so", file=sys.stderr)
+        print("No .so library found", file=sys.stderr)
         return 1
     failed = False
     for library in targets:
@@ -72,11 +72,11 @@ def main(argv: list[str]) -> int:
             continue
         bad = [a for a in alignments if a < PAGE_SIZE or a & (a - 1)]
         if not alignments or bad:
-            shown = ", ".join(hex(a) for a in alignments) or "ninguno"
-            print(f"FALLA {library}: segmentos LOAD alineados a {shown}; hace falta {hex(PAGE_SIZE)} o más")
+            shown = ", ".join(hex(a) for a in alignments) or "none"
+            print(f"FAIL  {library}: LOAD segments aligned to {shown}; {hex(PAGE_SIZE)} or more is required")
             failed = True
         else:
-            print(f"OK    {library}: {len(alignments)} segmentos LOAD alineados a {hex(min(alignments))} o más")
+            print(f"OK    {library}: {len(alignments)} LOAD segments aligned to {hex(min(alignments))} or more")
     return 1 if failed else 0
 
 

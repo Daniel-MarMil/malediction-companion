@@ -2,12 +2,12 @@
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
 #
-# Prepara Ubuntu 26.04 (en WSL 2 o nativo) para compilar y probar el núcleo igual que la
-# integración continua. Se ejecuta una vez, como usuario normal (pide sudo para apt):
+# Prepares Ubuntu 26.04 (on WSL 2 or native) to build and test the core the same way as
+# continuous integration. Run it once, as a normal user (it asks for sudo for apt):
 #   tools/dev/setup-wsl.sh
 #
-# Deja vcpkg y el NDK en ~/.local/share, las compilaciones en ~/.cache/seekers-companion
-# y las variables en ~/.bashrc. Se puede repetir sin problemas para actualizar.
+# It leaves vcpkg and the NDK in ~/.local/share, the builds in ~/.cache/seekers-companion
+# and the variables in ~/.bashrc. It is safe to run again to update.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -19,12 +19,12 @@ vcpkg_root="$data_dir/vcpkg"
 ndk_dir="$data_dir/android-ndk"
 build_root="$cache_dir/seekers-companion/build"
 
-# pipx y Woodpecker CLI van a ~/.local/bin. Con esa carpeta ya en el PATH, pipx no avisa de
-# que falta y las herramientas sirven durante el resto del script.
+# pipx and Woodpecker CLI go to ~/.local/bin. With that folder already on the PATH, pipx does
+# not warn that it is missing and the tools work for the rest of the script.
 mkdir -p "$bin_dir"
 export PATH="$bin_dir:$PATH"
 
-# Woodpecker CLI para validar los flujos de .woodpecker/ (versión y suma de la publicación oficial).
+# Woodpecker CLI to validate the workflows in .woodpecker/ (version and checksum of the official release).
 woodpecker_version="3.20.1"
 woodpecker_sha256="5b74ff1808af35b57bd5c2b528b7fdff24f5f69ad327715c1797f764da79dc13"
 
@@ -33,14 +33,14 @@ step() {
 }
 
 if [ "$(id -u)" -eq 0 ]; then
-    echo "Ejecuta este script con tu usuario, no como root: pedirá sudo cuando haga falta." >&2
+    echo "Run this script as your own user, not as root: it asks for sudo when needed." >&2
     exit 1
 fi
 if ! grep -q 'VERSION_ID="26.04"' /etc/os-release 2> /dev/null; then
-    echo "Aviso: la integración continua usa Ubuntu 26.04 y este sistema es otro; puede haber diferencias." >&2
+    echo "Warning: continuous integration uses Ubuntu 26.04 and this system is different; results may differ." >&2
 fi
 
-step "Paquetes del sistema"
+step "System packages"
 sudo apt-get update -qq
 sudo apt-get install -y -qq --no-install-recommends \
     build-essential clang libclang-rt-dev clang-tidy clang-format cmake ninja-build git curl \
@@ -51,10 +51,10 @@ step "gcovr 8.8"
 pipx install --force gcovr==8.8 > /dev/null
 pipx ensurepath > /dev/null
 
-step "vcpkg en $vcpkg_root"
+step "vcpkg at $vcpkg_root"
 "$root/tools/ci/bootstrap-vcpkg.sh" "$vcpkg_root"
 
-step "NDK r30 en $ndk_dir"
+step "NDK r30 at $ndk_dir"
 ANDROID_NDK_HOME="" MC_NDK_DIR="$ndk_dir" "$root/tools/ci/ci.sh" ndk
 
 step "Woodpecker CLI $woodpecker_version"
@@ -67,12 +67,12 @@ tar -xzf "$tmp/woodpecker-cli.tar.gz" -C "$tmp"
 install -m 0755 "$tmp/woodpecker-cli" "$bin_dir/woodpecker-cli"
 rm -rf "$tmp"
 
-step "Variables en ~/.bashrc"
+step "Variables in ~/.bashrc"
 mkdir -p "$build_root"
 begin="# >>> seekers-companion >>>"
 end="# <<< seekers-companion <<<"
 touch "$HOME/.bashrc"
-# Quita el bloque anterior, también los que dejaban los nombres antiguos del proyecto.
+# Remove the previous block, including the ones left by the project's old names.
 for name in seekers-companion seeker-companion malediction-companion; do
     sed -i "/^# >>> $name >>>\$/,/^# <<< $name <<<\$/d" "$HOME/.bashrc"
 done
@@ -88,15 +88,15 @@ $end
 EOF
 mkdir -p "$cache_dir/vcpkg/archives"
 
-step "Listo"
+step "Done"
 cmake --version | head -1
 clang --version | head -1
 g++ --version | head -1
 "$bin_dir/woodpecker-cli" --version 2> /dev/null || true
 cat << EOF
 
-Abre una terminal nueva (o ejecuta: source ~/.bashrc) y prueba:
+Open a new terminal (or run: source ~/.bashrc) and try:
   cd "$root"
   tools/ci/ci.sh asan
-La primera vez vcpkg compila las dependencias y tarda unos minutos; después quedan en caché.
+The first time, vcpkg builds the dependencies and takes a few minutes; after that they are cached.
 EOF

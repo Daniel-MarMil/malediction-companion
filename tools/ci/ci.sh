@@ -2,26 +2,26 @@
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
 #
-# Tareas del núcleo para la integración continua y para el entorno local (WSL o Linux).
-# En la CI corren como root dentro de ubuntu:26.04 e instalan lo que falta; en local usan
-# lo que dejó tools/dev/setup-wsl.sh.
+# Core tasks for continuous integration and for the local environment (WSL or Linux).
+# In CI they run as root inside ubuntu:26.04 and install whatever is missing; locally they
+# use what tools/dev/setup-wsl.sh installed.
 #
-# Uso: tools/ci/ci.sh TAREA [TAREA...]
-#   asan | tsan | release   compila con ese preset y pasa las pruebas
-#   coverage                pruebas con cobertura; falla por debajo del 90 % (RNF-17)
-#   fuzz                    compila los fuzzers y ejecuta cada uno MC_FUZZ_SECONDS segundos (RNF-19)
-#   lint                    clang-format y clang-tidy
-#   android                 biblioteca para arm64-v8a y x86_64 y comprobación de 16 KB (RNF-20)
-#   licenses                cabeceras SPDX y licencias de las dependencias de vcpkg (RNF-15)
-#   all                     todas las anteriores, en ese orden
-#   ndk                     solo descarga el NDK r30 si falta (lo usa tools/dev/setup-wsl.sh)
+# Usage: tools/ci/ci.sh TASK [TASK...]
+#   asan | tsan | release   build with that preset and run the tests
+#   coverage                tests with coverage; fails below 90 % (RNF-17)
+#   fuzz                    build the fuzzers and run each one for MC_FUZZ_SECONDS seconds (RNF-19)
+#   lint                    clang-format and clang-tidy
+#   android                 library for arm64-v8a and x86_64, plus the 16 KB check (RNF-20)
+#   licenses                SPDX headers and licenses of the vcpkg dependencies (RNF-15)
+#   all                     all of the above, in that order
+#   ndk                     only downloads NDK r30 if it is missing (used by tools/dev/setup-wsl.sh)
 #
-# Variables opcionales:
-#   MC_BUILD_ROOT      carpeta de compilación (por defecto, build/ en el repositorio)
-#   MC_FUZZ_SECONDS    duración de cada fuzzer (por defecto, 120)
-#   MC_CMAKE_ARGS      opciones extra para CMake al configurar, separadas por espacios
-#   VCPKG_ROOT         vcpkg ya instalado (por defecto, .vcpkg/ en el repositorio)
-#   ANDROID_NDK_HOME   NDK ya instalado (si no, se descarga el r30 en MC_NDK_DIR o .ndk/)
+# Optional variables:
+#   MC_BUILD_ROOT      build folder (default: build/ in the repository)
+#   MC_FUZZ_SECONDS    how long each fuzzer runs (default: 120)
+#   MC_CMAKE_ARGS      extra CMake options at configure time, separated by spaces
+#   VCPKG_ROOT         an existing vcpkg (default: .vcpkg/ in the repository)
+#   ANDROID_NDK_HOME   an existing NDK (otherwise r30 is downloaded to MC_NDK_DIR or .ndk/)
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -31,7 +31,7 @@ export DEBIAN_FRONTEND=noninteractive
 export VCPKG_DISABLE_METRICS=1
 export VCPKG_ROOT="${VCPKG_ROOT:-$root/.vcpkg}"
 export VCPKG_DEFAULT_BINARY_CACHE="${VCPKG_DEFAULT_BINARY_CACHE:-$root/.vcpkg-cache}"
-# Las mismas opciones que los presets de pruebas de CMakePresets.json.
+# The same options as the test presets in CMakePresets.json.
 export ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=1:abort_on_error=1:strict_string_checks=1}"
 export UBSAN_OPTIONS="${UBSAN_OPTIONS:-print_stacktrace=1:halt_on_error=1}"
 export TSAN_OPTIONS="${TSAN_OPTIONS:-halt_on_error=1}"
@@ -40,7 +40,7 @@ build_root="${MC_BUILD_ROOT:-$root/build}"
 fuzz_seconds="${MC_FUZZ_SECONDS:-120}"
 read -r -a cmake_args <<< "${MC_CMAKE_ARGS:-}"
 
-# NDK r30 (LTS), según la página de descargas del NDK consultada el 07-11-2026.
+# NDK r30 (LTS), according to the NDK downloads page checked on 2026-11-07.
 ndk_version="r30"
 ndk_sha1="5107f898313790e449e87eee2183d9a20602dee9"
 
@@ -50,7 +50,7 @@ usage() {
 
 install_packages() {
     if [ "$(id -u)" -ne 0 ]; then
-        return  # En local, las herramientas las instala tools/dev/setup-wsl.sh.
+        return  # Locally, tools/dev/setup-wsl.sh installs the tools.
     fi
     apt-get update -qq
     apt-get install -y -qq --no-install-recommends \
@@ -69,13 +69,13 @@ setup() {
     setup_done=true
 }
 
-# Configura, compila y, salvo con "sin-pruebas", ejecuta las pruebas de un preset.
-# La carpeta de compilación se fija con -B para poder sacarla del repositorio (MC_BUILD_ROOT).
+# Configures and builds a preset and, unless "no-tests" is given, runs its tests.
+# The build folder is set with -B so it can live outside the repository (MC_BUILD_ROOT).
 build_preset() {
     local preset="$1" dir="$build_root/$1"
     cmake --preset "$preset" -B "$dir" "${cmake_args[@]}"
     cmake --build "$dir"
-    if [ "${2:-}" != "sin-pruebas" ]; then
+    if [ "${2:-}" != "no-tests" ]; then
         ctest --test-dir "$dir" --output-on-failure --no-tests=error
     fi
 }
@@ -125,15 +125,15 @@ run_task() {
             ensure_gcovr
             build_preset coverage
             mkdir -p "$build_root/coverage/html"
-            # Solo los datos de esta compilación: sin buscar en el repositorio, que en WSL es lento y
-            # puede tener datos viejos de otras compilaciones.
+            # Only this build's data: no search through the repository, which is slow on WSL and
+            # may hold stale data from other builds.
             gcovr --root . --filter core/src/ --object-directory "$build_root/coverage" --txt --print-summary \
                 --html-details "$build_root/coverage/html/index.html" --fail-under-line 90 "$build_root/coverage"
-            echo "Informe de cobertura: $build_root/coverage/html/index.html"
+            echo "Coverage report: $build_root/coverage/html/index.html"
             ;;
         fuzz)
             setup
-            build_preset fuzz sin-pruebas
+            build_preset fuzz no-tests
             run_fuzzer dispatch fuzz/corpus/dispatch
             run_fuzzer rules_pack content/test
             ;;
@@ -147,13 +147,13 @@ run_task() {
         android)
             setup
             ensure_ndk
-            build_preset android-arm64 sin-pruebas
-            build_preset android-x86_64 sin-pruebas
+            build_preset android-arm64 no-tests
+            build_preset android-x86_64 no-tests
             python3 tools/ci/check_page_alignment.py "$build_root/android-arm64/core" "$build_root/android-x86_64/core"
             ;;
         licenses)
             python3 tools/ci/check_licenses.py
-            # Reutiliza las dependencias de las compilaciones que ya hay; si no hay ninguna, compila release.
+            # Reuses the dependencies of existing builds; if there are none, it configures release.
             local installed=()
             for dir in "$build_root"/*/vcpkg_installed; do
                 if [ -d "$dir" ]; then
@@ -171,7 +171,7 @@ run_task() {
             ;;
         ndk)
             ensure_ndk
-            echo "NDK en $ANDROID_NDK_HOME"
+            echo "NDK at $ANDROID_NDK_HOME"
             ;;
         all)
             local task
@@ -194,4 +194,4 @@ for task in "$@"; do
     echo "== $task"
     run_task "$task"
 done
-echo "== Tareas completadas: $*"
+echo "== Tasks completed: $*"

@@ -1,12 +1,12 @@
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
 #
-# Análisis estático del núcleo. Uso: clang-tidy -p build/<preset> core/src/*.cpp
-# Excepciones razonadas:
-#  - reinterpret_cast, new[] y delete[] son necesarios en la frontera en C (ADR-11).
-#  - Los números mágicos y los nombres cortos se dejan al criterio de la revisión.
-#  - Las cabeceras C++ usan #pragma once, que admiten GCC, Clang, MSVC y el NDK.
-#    La cabecera en C (mc_api.h) mantiene la guarda clásica para cualquier compilador.
+# Static analysis of the core. Usage: clang-tidy -p build/<preset> core/src/*.cpp
+# Justified exceptions:
+#  - reinterpret_cast, new[] and delete[] are needed at the C boundary (ADR-11).
+#  - Magic numbers and short names are left to code review.
+#  - The C++ headers use #pragma once, which GCC, Clang, MSVC and the NDK support.
+#    The C header (mc_api.h) keeps a classic include guard so any compiler accepts it.
 Checks: >
   -*,
   bugprone-*,

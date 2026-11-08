@@ -15,12 +15,12 @@ bool verify_signature(std::span<const std::uint8_t> message, std::span<const std
     if (signature.size() != signature_size || public_key.size() != public_key_size) {
         return false;
     }
-    // sodium_init admite llamadas repetidas y desde varios hilos; basta con hacerlo una vez.
+    // sodium_init can be called repeatedly and from several threads; once is enough.
     static const bool sodium_ready = sodium_init() >= 0;
     if (!sodium_ready) {
         return false;
     }
-    // Un mensaje vacío puede llegar sin puntero; libsodium recibe uno válido de todos modos.
+    // An empty message may arrive without a pointer; libsodium gets a valid one anyway.
     static constexpr unsigned char empty_message = 0;
     const unsigned char* data = message.empty() ? &empty_message : message.data();
     return crypto_sign_verify_detached(signature.data(), data, message.size(), public_key.data()) == 0;

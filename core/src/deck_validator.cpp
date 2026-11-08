@@ -34,8 +34,8 @@ constexpr std::array<std::pair<Rule, std::string_view>, 16> rule_names{{
     {Rule::SideTooLarge, "side_too_large"},
 }};
 
-/// Solo unidades, hechizos y objetos van en el mazo. Seeker, Legacy y terreno tienen su
-/// propio hueco, y las reliquias forman un mazo común aparte.
+/// Only units, spells and items go in the deck. Seeker, Legacy and terrain have their own
+/// slot, and relics form a separate shared deck.
 bool goes_in_deck(CardType type) noexcept {
     return type == CardType::Unit || type == CardType::Spell || type == CardType::Item;
 }
@@ -48,7 +48,7 @@ std::string join(const std::vector<std::string>& items) {
         }
         text += item;
     }
-    return text.empty() ? "ninguno" : text;
+    return text.empty() ? "none" : text;
 }
 
 struct CopyCount {
@@ -78,7 +78,7 @@ private:
         issues_.push_back({rule, std::move(card_id), std::move(detail)});
     }
 
-    /// Cada problema de una carta se informa una sola vez, aunque aparezca en varias líneas.
+    /// Each problem with a card is reported once, even if the card appears on several lines.
     void add_once(Rule rule, const std::string& card_id, std::string detail) {
         if (reported_.emplace(rule, card_id).second) {
             add(rule, card_id, std::move(detail));
@@ -88,19 +88,19 @@ private:
     const Card* find_known(const std::string& id) {
         const Card* card = pack_.find(id);
         if (card == nullptr) {
-            add_once(Rule::UnknownCard, id, "la carta no está en el paquete de reglas");
+            add_once(Rule::UnknownCard, id, "the card is not in the rules pack");
         }
         return card;
     }
 
     const Card* check_seeker() {
         if (deck_.seeker_id.empty()) {
-            add(Rule::SeekerMissing, {}, "el mazo necesita un Seeker");
+            add(Rule::SeekerMissing, {}, "the deck needs a Seeker");
             return nullptr;
         }
         const Card* seeker = find_known(deck_.seeker_id);
         if (seeker != nullptr && seeker->type != CardType::Seeker) {
-            add(Rule::SeekerWrongType, seeker->id, "es una carta de tipo " + std::string(to_string(seeker->type)));
+            add(Rule::SeekerWrongType, seeker->id, "it is a card of type " + std::string(to_string(seeker->type)));
             return nullptr;
         }
         return seeker;
@@ -108,7 +108,7 @@ private:
 
     void check_legacy(const Card* seeker) {
         if (deck_.legacy_id.empty()) {
-            add(Rule::LegacyMissing, {}, "el mazo necesita la Legacy de su Seeker");
+            add(Rule::LegacyMissing, {}, "the deck needs the Legacy of its Seeker");
             return;
         }
         const Card* legacy = find_known(deck_.legacy_id);
@@ -116,21 +116,21 @@ private:
             return;
         }
         if (legacy->type != CardType::Legacy) {
-            add(Rule::LegacyWrongType, legacy->id, "es una carta de tipo " + std::string(to_string(legacy->type)));
+            add(Rule::LegacyWrongType, legacy->id, "it is a card of type " + std::string(to_string(legacy->type)));
         } else if (seeker != nullptr && legacy->seeker_id != seeker->id) {
-            add(Rule::LegacyMismatch, legacy->id, "pertenece a " + legacy->seeker_id + ", no a " + seeker->id);
+            add(Rule::LegacyMismatch, legacy->id, "it belongs to " + legacy->seeker_id + ", not to " + seeker->id);
         }
     }
 
-    // El terreno puede ser de cualquier facción, así que no se comparan sus sigilos.
+    // The terrain can belong to any faction, so its sigils are not compared.
     void check_terrain() {
         if (deck_.terrain_id.empty()) {
-            add(Rule::TerrainMissing, {}, "el mazo necesita una carta de terreno");
+            add(Rule::TerrainMissing, {}, "the deck needs a terrain card");
             return;
         }
         const Card* terrain = find_known(deck_.terrain_id);
         if (terrain != nullptr && terrain->type != CardType::Terrain) {
-            add(Rule::TerrainWrongType, terrain->id, "es una carta de tipo " + std::string(to_string(terrain->type)));
+            add(Rule::TerrainWrongType, terrain->id, "it is a card of type " + std::string(to_string(terrain->type)));
         }
     }
 
@@ -138,7 +138,7 @@ private:
                        const Card* seeker) {
         for (const DeckEntry& entry : entries) {
             if (entry.copies < 1) {
-                add_once(Rule::InvalidCopies, entry.card_id, "cada línea necesita al menos una copia");
+                add_once(Rule::InvalidCopies, entry.card_id, "every line needs at least one copy");
                 continue;
             }
             count += entry.copies;
@@ -148,12 +148,12 @@ private:
             }
             if (!goes_in_deck(card->type)) {
                 add_once(Rule::CardTypeNotAllowed, card->id,
-                         "las cartas de tipo " + std::string(to_string(card->type)) + " no van en el mazo");
+                         "cards of type " + std::string(to_string(card->type)) + " do not go in the deck");
                 continue;
             }
             if (!rules_.copy_limits.contains(card->rank)) {
                 add_once(Rule::RankNotAllowed, card->id,
-                         "las cartas de rango " + std::string(to_string(card->rank)) + " no van en el mazo");
+                         "cards of rank " + std::string(to_string(card->rank)) + " do not go in the deck");
                 continue;
             }
             CopyCount& total = copies[card->id];
@@ -166,17 +166,17 @@ private:
     void check_sigils(const Card& card, const Card* seeker) {
         if (card.sigils.empty()) {
             if (!rules_.unaligned_cards_allowed) {
-                add_once(Rule::SigilMismatch, card.id, "este reglamento no admite cartas sin facción");
+                add_once(Rule::SigilMismatch, card.id, "these rules do not allow unaligned cards");
             }
             return;
         }
         if (seeker == nullptr) {
-            return;  // Sin un Seeker válido no hay sigilos con los que comparar.
+            return;  // Without a valid Seeker there are no sigils to compare with.
         }
-        // Una carta entra solo si todos sus sigilos están en el Seeker.
+        // A card is allowed only if every one of its sigils is on the Seeker.
         if (!std::ranges::includes(seeker->sigils, card.sigils)) {
             add_once(Rule::SigilMismatch, card.id,
-                     "sigilos de la carta: " + join(card.sigils) + "; del Seeker: " + join(seeker->sigils));
+                     "card sigils: " + join(card.sigils) + "; Seeker sigils: " + join(seeker->sigils));
         }
     }
 
@@ -190,8 +190,8 @@ private:
             }
             check_limits(total, "");
         } else {
-            check_limits(main_copies_, " en el mazo principal");
-            check_limits(side_copies_, " en el mazo auxiliar");
+            check_limits(main_copies_, " in the main deck");
+            check_limits(side_copies_, " in the side deck");
         }
     }
 
@@ -200,8 +200,8 @@ private:
             const auto limit = rules_.copy_limits.find(count.rank);
             if (limit != rules_.copy_limits.end() && count.copies > limit->second) {
                 add(Rule::TooManyCopies, id,
-                    std::to_string(count.copies) + " copias" + std::string(where) + "; el máximo para el rango " +
-                        std::string(to_string(count.rank)) + " es " + std::to_string(limit->second));
+                    std::to_string(count.copies) + " copies" + std::string(where) + "; the maximum for rank " +
+                        std::string(to_string(count.rank)) + " is " + std::to_string(limit->second));
             }
         }
     }
@@ -209,15 +209,15 @@ private:
     void check_sizes() {
         if (main_count_ < rules_.deck_min) {
             add(Rule::DeckTooSmall, {},
-                std::to_string(main_count_) + " cartas; el mínimo es " + std::to_string(rules_.deck_min));
+                std::to_string(main_count_) + " cards; the minimum is " + std::to_string(rules_.deck_min));
         }
         if (main_count_ > rules_.deck_max) {
             add(Rule::DeckTooLarge, {},
-                std::to_string(main_count_) + " cartas; el máximo es " + std::to_string(rules_.deck_max));
+                std::to_string(main_count_) + " cards; the maximum is " + std::to_string(rules_.deck_max));
         }
         if (side_count_ > rules_.side_max) {
             add(Rule::SideTooLarge, {},
-                std::to_string(side_count_) + " cartas en el mazo auxiliar; el máximo es " +
+                std::to_string(side_count_) + " cards in the side deck; the maximum is " +
                     std::to_string(rules_.side_max));
         }
     }

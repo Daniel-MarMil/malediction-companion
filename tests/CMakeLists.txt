@@ -1,14 +1,14 @@
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
 #
-# Pruebas del núcleo (RNF-17): GoogleTest para los casos concretos y RapidCheck para las
-# propiedades de la validación de mazos.
+# Core tests (RNF-17): GoogleTest for concrete cases and RapidCheck for properties of
+# deck validation.
 
 find_package(GTest CONFIG REQUIRED)
 find_package(rapidcheck CONFIG REQUIRED)
 include(GoogleTest)
 
-# La cabecera de la API se compila también como C11: si deja de ser C válido, falla aquí.
+# The API header is also compiled as C11: if it stops being valid C, the build fails here.
 add_library(mc_c_header_check OBJECT c_header_check.c)
 set_target_properties(mc_c_header_check PROPERTIES
     C_STANDARD 11
@@ -38,6 +38,6 @@ target_compile_definitions(mc_core_tests PRIVATE
     MC_EXPECTED_VERSION="${PROJECT_VERSION}")
 mc_apply_compiler_options(mc_core_tests)
 
-# PRE_TEST lista las pruebas al ejecutar ctest, así la compilación no necesita lanzar
-# el binario (útil con sanitizers y al compilar para otra plataforma).
+# PRE_TEST lists the tests when ctest runs, so the build does not need to run the
+# binary (useful with sanitizers and when cross-compiling).
 gtest_discover_tests(mc_core_tests DISCOVERY_MODE PRE_TEST)

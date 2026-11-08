@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 // SPDX-License-Identifier: Apache-2.0
 //
-// Implementación de la API en C (ADR-11). Ninguna excepción cruza esta frontera.
+// Implementation of the C API (ADR-11). No exception crosses this boundary.
 
 #include "mc/mc_api.h"
 
@@ -22,7 +22,7 @@
 #include <utility>
 
 #ifndef MC_VERSION_STRING
-#  error "MC_VERSION_STRING debe definirse al compilar el núcleo"
+#  error "MC_VERSION_STRING must be defined when building the core"
 #endif
 
 struct mc_session {
@@ -35,7 +35,7 @@ namespace {
 using nlohmann::json;
 namespace core = mc::core;
 
-// Límites defensivos para datos que pueden llegar de la red.
+// Defensive limits for data that may come from the network.
 constexpr std::size_t max_pack_bytes = std::size_t{16} * 1024 * 1024;
 constexpr std::size_t max_command_bytes = std::size_t{1} * 1024 * 1024;
 
@@ -56,7 +56,7 @@ Reply bad_command(std::string_view code, std::string_view detail) {
     return {.status = MC_ERR_BAD_COMMAND, .body = error_body(code, detail)};
 }
 
-/// Copia el texto en un búfer nuevo terminado en un byte nulo. Devuelve false sin memoria.
+/// Copies the text into a new null-terminated buffer. Returns false when out of memory.
 bool copy_out(std::string_view text, std::uint8_t** out, std::size_t* out_len) noexcept {
     auto* buffer = new (std::nothrow) std::uint8_t[text.size() + 1];
     if (buffer == nullptr) {
@@ -88,7 +88,7 @@ Reply pack_info(const mc_session& session) {
 Reply validate_deck(const mc_session& session, const json& command) {
     const auto field = command.find("deck");
     if (field == command.end()) {
-        return bad_command("bad_deck", "falta el campo deck");
+        return bad_command("bad_deck", "the deck field is missing");
     }
     core::Deck deck;
     try {
@@ -106,7 +106,7 @@ Reply validate_deck(const mc_session& session, const json& command) {
 
 Reply dispatch(const mc_session& session, std::string_view text) {
     if (text.size() > max_command_bytes) {
-        return bad_command("too_large", "el comando supera 1 MiB");
+        return bad_command("too_large", "the command is larger than 1 MiB");
     }
     json command;
     try {
@@ -116,7 +116,7 @@ Reply dispatch(const mc_session& session, std::string_view text) {
     }
     const auto name = command.is_object() ? command.find("cmd") : command.end();
     if (!command.is_object() || name == command.end() || !name->is_string()) {
-        return bad_command("missing_cmd", "el comando debe ser un objeto JSON con el texto cmd");
+        return bad_command("missing_cmd", "the command must be a JSON object with a cmd string");
     }
     const auto& cmd = name->get_ref<const std::string&>();
     if (cmd == "pack_info") {
@@ -125,7 +125,7 @@ Reply dispatch(const mc_session& session, std::string_view text) {
     if (cmd == "validate_deck") {
         return validate_deck(session, command);
     }
-    return bad_command("unknown_command", "comando desconocido: " + cmd);
+    return bad_command("unknown_command", "unknown command: " + cmd);
 }
 
 }  // namespace
@@ -161,7 +161,7 @@ mc_status mc_session_create(const uint8_t* pack, size_t pack_len, mc_session** o
     }
     *out_session = nullptr;
 
-    // Sin memoria para el detalle, el error se devuelve igualmente, solo que sin texto.
+    // Without memory for the detail, the error is still returned, only without text.
     const auto report = [&](std::string_view code, std::string_view detail) noexcept {
         if (out_error == nullptr) {
             return;
@@ -175,7 +175,7 @@ mc_status mc_session_create(const uint8_t* pack, size_t pack_len, mc_session** o
     };
 
     if (pack_len > max_pack_bytes) {
-        report("too_large", "el paquete supera 16 MiB");
+        report("too_large", "the pack is larger than 16 MiB");
         return MC_ERR_BAD_PACK;
     }
     try {
@@ -191,7 +191,7 @@ mc_status mc_session_create(const uint8_t* pack, size_t pack_len, mc_session** o
         report("internal", error.what());
         return MC_ERR_INTERNAL;
     } catch (...) {
-        report("internal", "error desconocido");
+        report("internal", "unknown error");
         return MC_ERR_INTERNAL;
     }
 }
@@ -217,7 +217,7 @@ mc_status mc_session_dispatch(mc_session* session, const uint8_t* cmd, size_t cm
     }
 }
 
-// Como free(), recibe un puntero no constante: quien libera es dueño del búfer.
+// Like free(), it takes a non-const pointer: whoever frees the buffer owns it.
 void mc_buffer_free(uint8_t* buffer) noexcept {  // NOLINT(readability-non-const-parameter)
     delete[] buffer;
 }

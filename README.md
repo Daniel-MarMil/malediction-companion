@@ -5,89 +5,92 @@ SPDX-License-Identifier: Apache-2.0
 
 # Seekers Companion
 
-Compañero digital para partidas de [Malediction](https://malediction.gg), el juego de cartas con
-miniaturas de Loot Studios: mazos que cumplen el reglamento, contadores de eco y maestría
-sincronizados entre los móviles y un registro de partidas. Toma como referencia el recorrido de
-la app de Warhammer 40,000, adaptado a un juego de cartas.
+A digital companion for games of [Malediction](https://malediction.gg), the card game with
+miniatures by Loot Studios: decks that follow the rules, echo and mastery counters kept in sync
+between phones, and a match log. It takes the flow of the Warhammer 40,000 app as a reference,
+adapted to a card game.
 
-**Proyecto no oficial.** No está afiliado a Loot Studios ni cuenta con su respaldo.
+**Unofficial project.** It is not affiliated with or endorsed by Loot Studios.
 
-## Estado
+## Status
 
-Fase 0: el núcleo compartido en C++20.
+Phase 0: the shared C++20 core.
 
-- Paquetes de reglas versionados (formato `mc-rules-pack` 1) con firma Ed25519 separada (ADR-06).
-- Validación de mazos (RF-06): Seeker, Legacy y terreno; 30 a 50 cartas; sigilos; copias por
-  rango; mazo auxiliar de 7. Los límites vienen del paquete, no del código.
-- API en C para las apps (ADR-11).
-- Pruebas con GoogleTest y RapidCheck, sanitizers, cobertura y fuzzing con libFuzzer.
+- Versioned rules packs (`mc-rules-pack` format 1) with a detached Ed25519 signature (ADR-06).
+- Deck validation (RF-06): Seeker, Legacy and terrain; 30 to 50 cards; sigils; copies per rank;
+  a side deck of 7. The limits come from the pack, not from the code.
+- C API for the apps (ADR-11).
+- Tests with GoogleTest and RapidCheck, sanitizers, coverage and fuzzing with libFuzzer.
 
-Después llegan la app Android (Kotlin con Jetpack Compose) y la app iOS (Swift con SwiftUI). La
-app iOS necesita un Mac con Xcode; mientras no haya uno, el trabajo sigue en Android.
+The Android app (Kotlin with Jetpack Compose) comes next, and then the iOS app (Swift with
+SwiftUI). The iOS app needs a Mac with Xcode; until there is one, work continues on Android.
 
-## Contenido oficial
+Requirement IDs (RF-xx for functional and RNF-xx for non-functional requirements) and the phases
+refer to the project's architecture and requirements document, which is written in Spanish.
 
-El proyecto se desarrolla con las cartas, imágenes, tipografías, colores e iconos oficiales de
-Malediction como si tuviera licencia (ADR-09), pero ese contenido **no está en el repositorio**:
-vive en `content/official/`, que git ignora (ADR-12). Las condiciones de malediction.gg prohíben
-reproducirlo o distribuirlo sin permiso expreso, también sin ánimo de lucro, así que antes de
-publicar cualquier versión hay que pedir licencia a Loot Studios. Más detalles en
+## Official content
+
+The project is developed with the official Malediction cards, images, fonts, colors and icons
+as if it had a license (ADR-09), but that content **is not in the repository**: it lives in
+`content/official/`, which git ignores (ADR-12). The malediction.gg terms forbid reproducing or
+distributing it without express permission, even on a non-profit basis, so a license must be
+requested from Loot Studios before publishing any version. More details in
 [`content/official/README.md`](content/official/README.md).
 
-Las pruebas usan un paquete de cartas ficticias: [`content/test/rules-pack.test.json`](content/test/rules-pack.test.json).
+The tests use a pack of made-up cards: [`content/test/rules-pack.test.json`](content/test/rules-pack.test.json).
 
-## Estructura
+## Layout
 
 ```text
-core/                 Núcleo C++20 (sin interfaz ni E/S)
-  include/mc/mc_api.h   API en C, la única frontera con las apps
-  include/mc/core/      Tipos del dominio: cartas, paquete de reglas, mazo, validación
-  src/                  Implementación
-tests/                Pruebas (GoogleTest, RapidCheck) y comprobación de la cabecera en C11
-fuzz/                 Objetivos de libFuzzer y corpus inicial
-content/test/         Paquete de reglas ficticio para las pruebas
-content/official/     Contenido oficial privado (ignorado por git)
-docs/                 Decisiones de arquitectura (adr/) y guía del entorno local
-tools/ci/             Tareas de la integración continua, también para uso local
-tools/dev/            Preparación del entorno local
-.woodpecker/          Flujos de Woodpecker CI
+core/                 C++20 core (no user interface, no I/O)
+  include/mc/mc_api.h   C API, the only boundary with the apps
+  include/mc/core/      Domain types: cards, rules pack, deck, validation
+  src/                  Implementation
+tests/                Tests (GoogleTest, RapidCheck) and the C11 header check
+fuzz/                 libFuzzer targets and seed corpus
+content/test/         Made-up rules pack for the tests
+content/official/     Private official content (ignored by git)
+docs/                 Architecture decisions (adr/) and local environment guide
+tools/ci/             Continuous integration tasks, also for local use
+tools/dev/            Local environment setup
+.woodpecker/          Woodpecker CI workflows
 ```
 
-## Compilar
+## Building
 
-Para preparar en Windows el entorno completo (WSL 2, Android Studio y, si se quiere, MSVC), sigue
-[`docs/entorno-local.md`](docs/entorno-local.md).
+To set up the full environment on Windows (WSL 2, Android Studio and, optionally, MSVC), follow
+[`docs/local-environment.md`](docs/local-environment.md).
 
-Hace falta CMake 3.25 o posterior, Ninja y un compilador C++20 (GCC 13 o posterior, Clang 18 o posterior,
-o el MSVC de Visual Studio 2022 o 2026). Las dependencias salen de [vcpkg](https://vcpkg.io) en modo
-manifiesto, con la versión fijada en `vcpkg.json` (ADR-10); la variable `VCPKG_ROOT` debe apuntar
-a vcpkg. `tools/ci/bootstrap-vcpkg.sh` lo descarga en esa versión.
+You need CMake 3.25 or later, Ninja and a C++20 compiler (GCC 13 or later, Clang 18 or later, or
+the MSVC of Visual Studio 2022 or 2026). The dependencies come from [vcpkg](https://vcpkg.io) in
+manifest mode, with the version pinned in `vcpkg.json` (ADR-10); the `VCPKG_ROOT` variable must
+point to vcpkg. `tools/ci/bootstrap-vcpkg.sh` downloads that version.
 
 ```sh
-cmake --preset dev            # Debug con pruebas; «release» para Release
+cmake --preset dev            # Debug with tests; "release" for Release
 cmake --build --preset dev
 ctest --preset dev
 ```
 
-En Windows, abre la carpeta con Visual Studio 2022 (17.5 o posterior) o 2026 con la integración
-de `CMakePresets.json` activada, o usa la consola de desarrollador. Los presets `asan`, `tsan`,
-`coverage` y `fuzz` están pensados para Linux o WSL 2; `tools/ci/ci.sh` los ejecuta igual que la
-integración continua:
+On Windows, open the folder with Visual Studio 2022 (17.5 or later) or 2026 with the
+`CMakePresets.json` integration enabled, or use the developer command prompt. The `asan`, `tsan`,
+`coverage` and `fuzz` presets are meant for Linux or WSL 2; `tools/ci/ci.sh` runs them the same
+way continuous integration does:
 
 ```sh
-tools/ci/ci.sh asan        # AddressSanitizer y UBSan
+tools/ci/ci.sh asan        # AddressSanitizer and UBSan
 tools/ci/ci.sh tsan        # ThreadSanitizer
-tools/ci/ci.sh coverage    # cobertura; falla por debajo del 90 %
-tools/ci/ci.sh fuzz        # Clang y libFuzzer
-tools/ci/ci.sh all         # todo lo que hace la integración continua
+tools/ci/ci.sh coverage    # coverage; fails below 90 %
+tools/ci/ci.sh fuzz        # Clang and libFuzzer
+tools/ci/ci.sh all         # everything continuous integration does
 ```
 
-Fuera de Windows, vcpkg compila libsodium con autotools: instala `autoconf`, `autoconf-archive`,
-`automake` y `libtool`.
+Outside Windows, vcpkg builds libsodium with autotools: install `autoconf`, `autoconf-archive`,
+`automake` and `libtool`.
 
-### Sin vcpkg
+### Without vcpkg
 
-En Linux se puede compilar con las bibliotecas del sistema. En Ubuntu 26.04 o 24.04:
+On Linux you can build with the system libraries. On Ubuntu 26.04 or 24.04:
 
 ```sh
 sudo apt install libsodium-dev nlohmann-json3-dev libgtest-dev librapidcheck-dev
@@ -96,23 +99,22 @@ cmake --preset system && cmake --build --preset system && ctest --preset system
 
 ### Android
 
-Con el NDK r28 o posterior (la integración continua usa el r30, la versión LTS actual) y la
-variable `ANDROID_NDK_HOME`:
+With NDK r28 or later (continuous integration uses r30, the current LTS release) and the
+`ANDROID_NDK_HOME` variable:
 
 ```sh
-cmake --preset android-arm64 && cmake --build --preset android-arm64    # móviles
-cmake --preset android-x86_64 && cmake --build --preset android-x86_64  # emulador
+cmake --preset android-arm64 && cmake --build --preset android-arm64    # phones
+cmake --preset android-x86_64 && cmake --build --preset android-x86_64  # emulator
 python3 tools/ci/check_page_alignment.py build/android-arm64/core
 ```
 
-La biblioteca compartida exporta solo las funciones de la API en C y se alinea a páginas de
-16 KB, como exige Google Play a las apps que se dirigen a Android 15 (API 35) o posterior en
-dispositivos de 64 bits (RNF-20).
+The shared library exports only the C API functions and is aligned to 16 KB pages, as Google
+Play requires for apps that target Android 15 (API 35) or later on 64-bit devices (RNF-20).
 
-## API en C
+## C API
 
-Las apps hablan con el núcleo mediante comandos JSON. Una sesión se usa desde un solo hilo, y
-todo búfer devuelto se libera con `mc_buffer_free`:
+The apps talk to the core through JSON commands. A session is used from a single thread, and
+every returned buffer is freed with `mc_buffer_free`:
 
 ```c
 mc_session* session = NULL;
@@ -133,34 +135,39 @@ mc_buffer_free(reply);
 mc_session_destroy(session);
 ```
 
-| Comando | Respuesta |
+| Command | Reply |
 |---|---|
 | `{"cmd":"pack_info"}` | `{"ok":true,"pack":{"id","version","date","origin","license","cards"}}` |
 | `{"cmd":"validate_deck","deck":{...}}` | `{"ok":true,"valid":bool,"issues":[{"rule","card","detail"}]}` |
 
-El mazo tiene la forma `{"seeker","legacy","terrain","main":[{"card","copies"}],"side":[...]}`.
-Cada incidencia lleva un código estable que la app traduce: `seeker_missing`,
+The deck has the shape `{"seeker","legacy","terrain","main":[{"card","copies"}],"side":[...]}`.
+Each issue carries a stable code that the app translates: `seeker_missing`,
 `seeker_wrong_type`, `legacy_missing`, `legacy_wrong_type`, `legacy_mismatch`, `terrain_missing`,
 `terrain_wrong_type`, `unknown_card`, `invalid_copies`, `card_type_not_allowed`,
-`rank_not_allowed`, `sigil_mismatch`, `too_many_copies`, `deck_too_small`, `deck_too_large` y
-`side_too_large`.
+`rank_not_allowed`, `sigil_mismatch`, `too_many_copies`, `deck_too_small`, `deck_too_large` and
+`side_too_large`. The `detail` text is in English and meant for debugging, not for players.
 
-## Integración continua
+## Continuous integration
 
-Los flujos de [`.woodpecker/`](.woodpecker) llaman a `tools/ci/ci.sh`, que también se puede
-ejecutar en local. Para no gastar más recursos de Codeberg de los necesarios, lo pesado va aparte:
+The workflows in [`.woodpecker/`](.woodpecker) call `tools/ci/ci.sh`, which can also be run
+locally. To use no more of Codeberg's resources than needed, the heavy work runs separately:
 
-| Flujo | Cuándo | Qué |
+| Workflow | When | What |
 |---|---|---|
-| `core.yaml` | En cada push y pull request, salvo si solo cambia documentación | clang-format y clang-tidy, ASan y UBSan, cobertura mínima del 90 % (RNF-17) y licencias de las dependencias |
-| `extended.yaml` | Una vez por semana o a mano | ThreadSanitizer, Release, fuzzing y biblioteca para Android con comprobación de 16 KB (RNF-19 y RNF-20) |
-| `licenses.yaml` | Cabeceras SPDX en cada push; ScanCode, una vez por semana o a mano | Licencias del código propio (RNF-15) |
+| `core.yaml` | On every push and pull request, unless only documentation changes | clang-format and clang-tidy, ASan and UBSan, minimum coverage of 90 % (RNF-17) and dependency licenses |
+| `extended.yaml` | Once a week or manually | ThreadSanitizer, Release, fuzzing and the Android library with the 16 KB check (RNF-19 and RNF-20) |
+| `licenses.yaml` | SPDX headers on every push; ScanCode once a week or manually | Licenses of the project's own code (RNF-15) |
 
-`core.yaml` y `extended.yaml` usan la imagen `ubuntu:26.04` (GCC 15, Clang 21 y CMake 4.2). Para la
-ejecución semanal, crea en Woodpecker una tarea programada (Cron) llamada `semanal`.
+`core.yaml` and `extended.yaml` use the `ubuntu:26.04` image (GCC 15, Clang 21 and CMake 4.2). For
+the weekly run, create a scheduled task (Cron) named `weekly` in Woodpecker.
 
-## Licencia
+## Contributing
 
-El código es software libre bajo la [Licencia Apache 2.0](LICENSE); cada fichero lleva su
-cabecera SPDX. Las dependencias tienen licencias compatibles (ADR-08); ver [`NOTICE`](NOTICE).
-Malediction y todo su contenido pertenecen a Loot Studios.
+Code, comments, documentation, scripts and commit messages are written in English. The only
+exception is the architecture and requirements document, which stays in Spanish.
+
+## License
+
+The code is free software under the [Apache License 2.0](LICENSE); every file carries its SPDX
+header. The dependencies have compatible licenses (ADR-08); see [`NOTICE`](NOTICE). Malediction
+and all its content belong to Loot Studios.

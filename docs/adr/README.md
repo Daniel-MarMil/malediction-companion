@@ -3,21 +3,21 @@ SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# Registro de decisiones de arquitectura
+# Architecture decision records
 
-Cada decisión sigue el mismo esquema: contexto, decisión, alternativas descartadas y consecuencias. El documento de arquitectura y requisitos es la referencia; estos ficheros acompañan al código.
+Every decision follows the same outline: context, decision, rejected alternatives and consequences. The architecture and requirements document (written in Spanish) is the reference; these files travel with the code.
 
-| Decisión | Título | Estado |
+| Decision | Title | Status |
 |---|---|---|
-| [ADR-01](0001.md) | Núcleo de reglas y protocolo en C++20 compartido | Aceptada |
-| [ADR-02](0002.md) | Interfaces nativas sobre el núcleo C++ | Aceptada |
-| [ADR-03](0003.md) | Servidor como monolito modular en C++20 con Drogon y PostgreSQL | Aceptada |
-| [ADR-04](0004.md) | Partida autoritativa en el servidor por WebSocket | Aceptada |
-| [ADR-05](0005.md) | Cuenta con correo verificado; catálogo de cartas sin cuenta | Aceptada |
-| [ADR-06](0006.md) | Reglas y cartas como paquetes de datos firmados con Ed25519 | Aceptada |
-| [ADR-07](0007.md) | Alojamiento y proveedores solo en el EEE | Propuesta |
-| [ADR-08](0008.md) | Licencia Apache 2.0 y dependencias permitidas | Aceptada |
-| [ADR-09](0009.md) | Desarrollar con el contenido y la identidad visual oficiales | Aceptada |
-| [ADR-10](0010.md) | CMake y vcpkg en modo manifiesto con versiones fijadas | Aceptada |
-| [ADR-11](0011.md) | Una única frontera en C entre el núcleo y las apps | Aceptada |
-| [ADR-12](0012.md) | Contenido oficial en un paquete privado separado del código | Aceptada |
+| [ADR-01](0001.md) | Shared C++20 rules and protocol core | Accepted |
+| [ADR-02](0002.md) | Native user interfaces on top of the C++ core | Accepted |
+| [ADR-03](0003.md) | Server as a modular C++20 monolith with Drogon and PostgreSQL | Accepted |
+| [ADR-04](0004.md) | Server-authoritative match over WebSocket | Accepted |
+| [ADR-05](0005.md) | Account with a verified email address; card catalog without an account | Accepted |
+| [ADR-06](0006.md) | Rules and cards as data packs signed with Ed25519 | Accepted |
+| [ADR-07](0007.md) | Hosting and providers only in the EEA | Proposed |
+| [ADR-08](0008.md) | Apache 2.0 license and allowed dependencies | Accepted |
+| [ADR-09](0009.md) | Develop with the official content and visual identity | Accepted |
+| [ADR-10](0010.md) | CMake and vcpkg in manifest mode with pinned versions | Accepted |
+| [ADR-11](0011.md) | A single C boundary between the core and the apps | Accepted |
+| [ADR-12](0012.md) | Official content in a private pack, separate from the code | Accepted |

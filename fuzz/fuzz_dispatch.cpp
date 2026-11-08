@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 // SPDX-License-Identifier: Apache-2.0
 //
-// Comandos arbitrarios sobre una sesión con el paquete de prueba: toda respuesta debe ser
-// un JSON terminado en un byte nulo y el núcleo no debe fallar.
+// Arbitrary commands on a session with the test pack: every reply must be a JSON object
+// terminated by a null byte, and the core must not crash.
 
 #include "mc/mc_api.h"
 

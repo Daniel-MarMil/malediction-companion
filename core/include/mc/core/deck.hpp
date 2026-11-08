@@ -8,13 +8,13 @@
 
 namespace mc::core {
 
-/// Una línea del mazo: una carta y cuántas copias lleva.
+/// One deck line: a card and how many copies of it.
 struct DeckEntry {
     std::string card_id;
     int copies{1};
 };
 
-/// Warband: Seeker, Legacy y terreno, más el mazo principal y el auxiliar.
+/// Warband: Seeker, Legacy and terrain, plus the main deck and the side deck.
 struct Deck {
     std::string seeker_id;
     std::string legacy_id;

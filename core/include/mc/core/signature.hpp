@@ -12,8 +12,8 @@ namespace mc::core {
 inline constexpr std::size_t signature_size = 64;
 inline constexpr std::size_t public_key_size = 32;
 
-/// Comprueba una firma Ed25519 separada (ADR-06). Devuelve false si no coincide
-/// o si los tamaños no son los de Ed25519.
+/// Checks a detached Ed25519 signature (ADR-06). Returns false if it does not match
+/// or if the sizes are not those of Ed25519.
 [[nodiscard]] bool verify_signature(std::span<const std::uint8_t> message, std::span<const std::uint8_t> signature,
                                     std::span<const std::uint8_t> public_key) noexcept;
 

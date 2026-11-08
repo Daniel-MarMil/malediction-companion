@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Daniel Martín Millet
  * SPDX-License-Identifier: Apache-2.0
  *
- * Comprueba que mc_api.h es C11 válido y que sus funciones se enlazan desde C.
+ * Checks that mc_api.h is valid C11 and that its functions link from C.
  */
 #include "mc/mc_api.h"
 

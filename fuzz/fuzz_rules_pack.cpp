@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 // SPDX-License-Identifier: Apache-2.0
 //
-// Paquetes de reglas arbitrarios: el núcleo debe aceptarlos o rechazarlos sin fallar.
+// Arbitrary rules packs: the core must accept or reject them without crashing.
 
 #include "mc/mc_api.h"
 
@@ -14,7 +14,7 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
     std::uint8_t* error = nullptr;
     std::size_t error_len = 0;
     const mc_status status = mc_session_create(data, size, &session, &error, &error_len);
-    // Con éxito hay sesión y no hay error; con un paquete malo, al revés.
+    // On success there is a session and no error; with a bad pack, the other way round.
     if ((status == MC_OK) != (session != nullptr)) {
         std::abort();
     }

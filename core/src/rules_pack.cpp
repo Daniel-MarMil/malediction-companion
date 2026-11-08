@@ -20,7 +20,7 @@ using nlohmann::json;
 constexpr std::string_view pack_format = "mc-rules-pack";
 constexpr int supported_format_version = 1;
 
-// Límites defensivos: un paquete real tiene unos cientos de cartas.
+// Defensive limits: a real pack has a few hundred cards.
 constexpr std::size_t max_cards = 20000;
 constexpr std::size_t max_id_length = 64;
 constexpr std::size_t max_sigils = 8;
@@ -42,7 +42,7 @@ const json* find_field(const json& object, const char* key) {
 const json& require_field(const json& object, const char* key, const std::string& where) {
     const json* value = find_field(object, key);
     if (value == nullptr) {
-        fail(path_of(where, key), "falta el campo");
+        fail(path_of(where, key), "the field is missing");
     }
     return *value;
 }
@@ -50,7 +50,7 @@ const json& require_field(const json& object, const char* key, const std::string
 const json& require_object(const json& object, const char* key, const std::string& where) {
     const json& value = require_field(object, key, where);
     if (!value.is_object()) {
-        fail(path_of(where, key), "debe ser un objeto");
+        fail(path_of(where, key), "must be an object");
     }
     return value;
 }
@@ -58,7 +58,7 @@ const json& require_object(const json& object, const char* key, const std::strin
 std::string require_string(const json& object, const char* key, const std::string& where) {
     const json& value = require_field(object, key, where);
     if (!value.is_string() || value.get_ref<const std::string&>().empty()) {
-        fail(path_of(where, key), "debe ser un texto no vacío");
+        fail(path_of(where, key), "must be a non-empty string");
     }
     return value.get<std::string>();
 }
@@ -66,7 +66,7 @@ std::string require_string(const json& object, const char* key, const std::strin
 int to_bounded_int(const json& value, const std::string& path, int min, int max) {
     const auto number = detail::to_int(value);
     if (!number || *number < min || *number > max) {
-        fail(path, "debe ser un entero entre " + std::to_string(min) + " y " + std::to_string(max));
+        fail(path, "must be an integer between " + std::to_string(min) + " and " + std::to_string(max));
     }
     return *number;
 }
@@ -78,7 +78,7 @@ int read_int(const json& object, const char* key, const std::string& where, int 
         if (fallback) {
             return *fallback;
         }
-        fail(path_of(where, key), "falta el campo");
+        fail(path_of(where, key), "the field is missing");
     }
     return to_bounded_int(*value, path_of(where, key), min, max);
 }
@@ -89,7 +89,7 @@ bool read_bool(const json& object, const char* key, const std::string& where, bo
         return fallback;
     }
     if (!value->is_boolean()) {
-        fail(path_of(where, key), "debe ser true o false");
+        fail(path_of(where, key), "must be true or false");
     }
     return value->get<bool>();
 }
@@ -100,7 +100,7 @@ DeckRules read_rules(const json& object) {
     rules.deck_min = read_int(object, "deck_min", where, 1, max_number, std::nullopt);
     rules.deck_max = read_int(object, "deck_max", where, 1, max_number, std::nullopt);
     if (rules.deck_max < rules.deck_min) {
-        fail(where + ".deck_max", "no puede ser menor que deck_min");
+        fail(where + ".deck_max", "cannot be less than deck_min");
     }
     rules.side_max = read_int(object, "side_max", where, 0, max_number, std::nullopt);
 
@@ -110,7 +110,7 @@ DeckRules read_rules(const json& object) {
         const std::string path = where + ".copy_limits." + item.key();
         const auto rank = parse_rank(item.key());
         if (!rank || *rank == Rank::None) {
-            fail(path, "rango desconocido");
+            fail(path, "unknown rank");
         }
         rules.copy_limits[*rank] = to_bounded_int(item.value(), path, 1, max_number);
     }
@@ -127,15 +127,15 @@ std::vector<std::string> read_sigils(const json& card, const std::string& where)
     }
     const std::string path = where + ".sigils";
     if (!value->is_array() || value->size() > max_sigils) {
-        fail(path, "debe ser una lista de " + std::to_string(max_sigils) + " sigilos como máximo");
+        fail(path, "must be a list of at most " + std::to_string(max_sigils) + " sigils");
     }
     for (const json& sigil : *value) {
         if (!sigil.is_string() || sigil.get_ref<const std::string&>().empty()) {
-            fail(path, "cada sigilo debe ser un texto no vacío");
+            fail(path, "every sigil must be a non-empty string");
         }
         sigils.push_back(sigil.get<std::string>());
     }
-    // Ordenados y sin repetir, para comparar conjuntos con std::ranges::includes.
+    // Sorted and without duplicates, so that sets can be compared with std::ranges::includes.
     std::ranges::sort(sigils);
     const auto repeated = std::ranges::unique(sigils);
     sigils.erase(repeated.begin(), repeated.end());
@@ -144,19 +144,19 @@ std::vector<std::string> read_sigils(const json& card, const std::string& where)
 
 Card read_card(const json& value, const std::string& where) {
     if (!value.is_object()) {
-        fail(where, "debe ser un objeto");
+        fail(where, "must be an object");
     }
     Card card;
     card.id = require_string(value, "id", where);
     if (card.id.size() > max_id_length) {
-        fail(where + ".id", "tiene más de " + std::to_string(max_id_length) + " caracteres");
+        fail(where + ".id", "has more than " + std::to_string(max_id_length) + " characters");
     }
     card.name = require_string(value, "name", where);
 
     const std::string type_name = require_string(value, "type", where);
     const auto type = parse_card_type(type_name);
     if (!type) {
-        fail(where + ".type", "tipo desconocido '" + type_name + "'");
+        fail(where + ".type", "unknown type '" + type_name + "'");
     }
     card.type = *type;
 
@@ -164,7 +164,7 @@ Card read_card(const json& value, const std::string& where) {
         const auto rank =
             rank_value->is_string() ? parse_rank(rank_value->get_ref<const std::string&>()) : std::nullopt;
         if (!rank) {
-            fail(where + ".rank", "rango desconocido");
+            fail(where + ".rank", "unknown rank");
         }
         card.rank = *rank;
     }
@@ -185,23 +185,23 @@ RulesPack RulesPack::parse(std::string_view text) {
     try {
         root = json::parse(text.begin(), text.end());
     } catch (const json::exception& error) {
-        throw PackError(std::string("JSON no válido: ") + error.what());
+        throw PackError(std::string("invalid JSON: ") + error.what());
     }
     if (!root.is_object()) {
-        throw PackError("el paquete debe ser un objeto JSON");
+        throw PackError("the pack must be a JSON object");
     }
 
     const std::string format = require_string(root, "format", "");
     if (format != pack_format) {
-        fail("format", "se esperaba '" + std::string(pack_format) + "'");
+        fail("format", "expected '" + std::string(pack_format) + "'");
     }
     const int version = read_int(root, "format_version", "", 1, max_number, std::nullopt);
     if (version != supported_format_version) {
-        fail("format_version", "la versión " + std::to_string(version) + " no está admitida");
+        fail("format_version", "version " + std::to_string(version) + " is not supported");
     }
 
-    // Ruta vacía para los campos de primer nivel. Es una variable con nombre para que las
-    // referencias devueltas por require_* no parezcan ligadas a un temporal.
+    // Empty path for top-level fields. It is a named variable so that the references
+    // returned by require_* do not look bound to a temporary.
     const std::string top;
     RulesPack pack;
     pack.info_.id = require_string(root, "id", top);
@@ -213,26 +213,27 @@ RulesPack RulesPack::parse(std::string_view text) {
 
     const json& cards = require_field(root, "cards", top);
     if (!cards.is_array() || cards.size() > max_cards) {
-        fail("cards", "debe ser una lista de " + std::to_string(max_cards) + " cartas como máximo");
+        fail("cards", "must be a list of at most " + std::to_string(max_cards) + " cards");
     }
     pack.cards_.reserve(cards.size());
     for (std::size_t i = 0; i < cards.size(); ++i) {
         const std::string where = "cards[" + std::to_string(i) + "]";
         Card card = read_card(cards[i], where);
         if (!pack.index_.emplace(card.id, pack.cards_.size()).second) {
-            fail(where + ".id", "identificador repetido '" + card.id + "'");
+            fail(where + ".id", "duplicate id '" + card.id + "'");
         }
         pack.cards_.push_back(std::move(card));
     }
 
-    // Cada Legacy debe pertenecer a un Seeker del mismo paquete.
+    // Every Legacy must belong to a Seeker in the same pack.
     for (const Card& card : pack.cards_) {
         if (card.type != CardType::Legacy) {
             continue;
         }
         const Card* seeker = pack.find(card.seeker_id);
         if (seeker == nullptr || seeker->type != CardType::Seeker) {
-            fail("cards", "la Legacy '" + card.id + "' apunta a un Seeker que no existe: '" + card.seeker_id + "'");
+            fail("cards",
+                 "the Legacy '" + card.id + "' points to a Seeker that does not exist: '" + card.seeker_id + "'");
         }
     }
     return pack;

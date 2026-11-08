@@ -11,10 +11,10 @@
 
 namespace mc::core {
 
-/// Tipos de carta del reglamento.
+/// Card types defined by the rules.
 enum class CardType : std::uint8_t { Seeker, Legacy, Terrain, Unit, Spell, Item, Relic };
 
-/// Rango de una carta; limita sus copias en el mazo.
+/// Rank of a card; it limits how many copies a deck may hold.
 enum class Rank : std::uint8_t { None, Basic, Elite, Unique, Legendary };
 
 [[nodiscard]] std::optional<CardType> parse_card_type(std::string_view text) noexcept;
@@ -22,16 +22,16 @@ enum class Rank : std::uint8_t { None, Basic, Elite, Unique, Legendary };
 [[nodiscard]] std::string_view to_string(CardType type) noexcept;
 [[nodiscard]] std::string_view to_string(Rank rank) noexcept;
 
-/// Una carta tal como la describe un paquete de reglas.
+/// A card as a rules pack describes it.
 struct Card {
     std::string id;
     std::string name;
     CardType type{CardType::Unit};
     Rank rank{Rank::None};
     int cost{0};
-    std::vector<std::string> sigils;  ///< Sigilos de facción; vacío significa carta sin facción.
-    std::string seeker_id;            ///< Solo en una Legacy: el Seeker al que pertenece.
-    int starting_echo{0};             ///< Solo en una Legacy: el eco inicial.
+    std::vector<std::string> sigils;  ///< Faction sigils; empty means an unaligned card.
+    std::string seeker_id;            ///< Legacy only: the Seeker it belongs to.
+    int starting_echo{0};             ///< Legacy only: the starting echo.
 };
 
 }  // namespace mc::core

@@ -25,7 +25,7 @@ Bytes from_hex(std::string_view hex) {
     std::size_t written = 0;
     if (sodium_hex2bin(bytes.data(), bytes.size(), hex.data(), hex.size(), nullptr, &written, nullptr) != 0 ||
         written != bytes.size()) {
-        throw std::invalid_argument("hexadecimal no válido");
+        throw std::invalid_argument("invalid hexadecimal");
     }
     return bytes;
 }
@@ -39,10 +39,10 @@ struct KeyPair {
     Bytes secret_key = Bytes(crypto_sign_SECRETKEYBYTES);
 };
 
-/// Claves deterministas a partir de una semilla, para que las pruebas sean repetibles.
+/// Deterministic keys from a seed, so that the tests are repeatable.
 KeyPair key_pair(std::uint8_t seed_byte) {
     if (sodium_init() < 0) {
-        throw std::runtime_error("no se pudo iniciar libsodium");
+        throw std::runtime_error("could not initialize libsodium");
     }
     std::array<std::uint8_t, crypto_sign_SEEDBYTES> seed{};
     seed.fill(seed_byte);
@@ -57,7 +57,7 @@ Bytes sign(const Bytes& message, const KeyPair& keys) {
     return signature;
 }
 
-// Vector de prueba 1 de la RFC 8032, apartado 7.1: mensaje vacío.
+// Test vector 1 from RFC 8032, section 7.1: an empty message.
 TEST(Signature, MatchesRfc8032TestVector) {
     const Bytes public_key = from_hex("d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a");
     const Bytes signature = from_hex(
@@ -83,21 +83,21 @@ TEST(Signature, RejectsAModifiedPack) {
 
 TEST(Signature, RejectsAModifiedSignature) {
     const KeyPair keys = key_pair(7);
-    const Bytes pack = from_text("paquete");
+    const Bytes pack = from_text("pack");
     Bytes signature = sign(pack, keys);
     signature[10] = static_cast<std::uint8_t>(signature[10] ^ 0x01);
     EXPECT_FALSE(verify_signature(pack, signature, keys.public_key));
 }
 
 TEST(Signature, RejectsAnotherKey) {
-    const Bytes pack = from_text("paquete");
+    const Bytes pack = from_text("pack");
     const Bytes signature = sign(pack, key_pair(7));
     EXPECT_FALSE(verify_signature(pack, signature, key_pair(8).public_key));
 }
 
 TEST(Signature, RejectsWrongSizes) {
     const KeyPair keys = key_pair(7);
-    const Bytes pack = from_text("paquete");
+    const Bytes pack = from_text("pack");
     Bytes signature = sign(pack, keys);
     Bytes short_signature(signature.begin(), signature.end() - 1);
     Bytes short_key(keys.public_key.begin(), keys.public_key.end() - 1);

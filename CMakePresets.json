@@ -27,7 +27,7 @@
     },
     {
       "name": "dev",
-      "displayName": "Desarrollo: Debug con pruebas",
+      "displayName": "Development: Debug with tests",
       "inherits": "vcpkg-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
@@ -35,7 +35,7 @@
     },
     {
       "name": "release",
-      "displayName": "Release con pruebas",
+      "displayName": "Release with tests",
       "inherits": "vcpkg-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
@@ -43,7 +43,7 @@
     },
     {
       "name": "asan",
-      "displayName": "AddressSanitizer y UBSan (Linux, WSL o macOS)",
+      "displayName": "AddressSanitizer and UBSan (Linux, WSL or macOS)",
       "inherits": [
         "vcpkg-base",
         "not-windows"
@@ -55,7 +55,7 @@
     },
     {
       "name": "tsan",
-      "displayName": "ThreadSanitizer (Linux, WSL o macOS)",
+      "displayName": "ThreadSanitizer (Linux, WSL or macOS)",
       "inherits": [
         "vcpkg-base",
         "not-windows"
@@ -67,7 +67,7 @@
     },
     {
       "name": "coverage",
-      "displayName": "Cobertura con gcov (Linux, WSL o macOS)",
+      "displayName": "Coverage with gcov (Linux, WSL or macOS)",
       "inherits": [
         "vcpkg-base",
         "not-windows"
@@ -79,7 +79,7 @@
     },
     {
       "name": "tidy",
-      "displayName": "Análisis con clang-tidy (Clang en Linux o WSL)",
+      "displayName": "Analysis with clang-tidy (Clang on Linux or WSL)",
       "inherits": [
         "vcpkg-base",
         "not-windows"
@@ -92,7 +92,7 @@
     },
     {
       "name": "fuzz",
-      "displayName": "Fuzzing con libFuzzer, ASan y UBSan (Clang en Linux o WSL)",
+      "displayName": "Fuzzing with libFuzzer, ASan and UBSan (Clang on Linux or WSL)",
       "inherits": [
         "vcpkg-base",
         "not-windows"
@@ -108,7 +108,7 @@
     },
     {
       "name": "system",
-      "displayName": "Bibliotecas del sistema, sin vcpkg (Linux)",
+      "displayName": "System libraries, without vcpkg (Linux)",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
@@ -135,7 +135,7 @@
     },
     {
       "name": "android-arm64",
-      "displayName": "Android arm64-v8a: biblioteca para móviles",
+      "displayName": "Android arm64-v8a: library for phones",
       "inherits": "android-base",
       "cacheVariables": {
         "VCPKG_TARGET_TRIPLET": "arm64-android",
@@ -144,7 +144,7 @@
     },
     {
       "name": "android-x86_64",
-      "displayName": "Android x86_64: biblioteca para el emulador",
+      "displayName": "Android x86_64: library for the emulator",
       "inherits": "android-base",
       "cacheVariables": {
         "VCPKG_TARGET_TRIPLET": "x64-android",

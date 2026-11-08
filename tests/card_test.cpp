@@ -32,7 +32,7 @@ TEST(Card, RankNamesRoundTrip) {
 
 TEST(Card, UnknownNamesAreRejected) {
     EXPECT_FALSE(parse_card_type("").has_value());
-    EXPECT_FALSE(parse_card_type("Unit").has_value()) << "los nombres distinguen mayúsculas";
+    EXPECT_FALSE(parse_card_type("Unit").has_value()) << "names are case-sensitive";
     EXPECT_FALSE(parse_rank("mythic").has_value());
 }
 
@@ -42,7 +42,7 @@ TEST(Rule, CodesAreUniqueAndSnakeCase) {
         const std::string code(to_string(static_cast<Rule>(value)));
         EXPECT_NE(code, "unknown");
         EXPECT_EQ(code.find_first_not_of("abcdefghijklmnopqrstuvwxyz_"), std::string::npos) << code;
-        EXPECT_TRUE(codes.insert(code).second) << "código repetido: " << code;
+        EXPECT_TRUE(codes.insert(code).second) << "duplicate code: " << code;
     }
     EXPECT_EQ(codes.size(), 16U);
 }

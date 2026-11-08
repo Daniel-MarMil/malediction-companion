@@ -1,9 +1,9 @@
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
 #
-# Busca libsodium (ADR-06) y deja el nombre del objetivo en MC_SODIUM_TARGET.
-# Primero prueba el paquete de vcpkg; si no está, usa pkg-config para compilar con la
-# biblioteca del sistema, como hacen las distribuciones de Linux.
+# Finds libsodium (ADR-06) and stores the target name in MC_SODIUM_TARGET.
+# It tries the vcpkg package first; if that is missing, it uses pkg-config to build
+# against the system library, as Linux distributions do.
 
 find_package(unofficial-sodium CONFIG QUIET)
 if(TARGET unofficial-sodium::sodium)

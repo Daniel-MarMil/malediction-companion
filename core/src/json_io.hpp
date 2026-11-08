@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 // SPDX-License-Identifier: Apache-2.0
 //
-// Conversión entre JSON y los tipos del dominio. Es interna: el JSON solo cruza la
-// frontera como bytes (ADR-11), así que nlohmann::json no aparece en las cabeceras públicas.
+// Conversion between JSON and the domain types. It is internal: JSON only crosses the
+// boundary as bytes (ADR-11), so nlohmann::json does not appear in the public headers.
 
 #pragma once
 
@@ -19,23 +19,23 @@
 
 namespace mc::core::detail {
 
-/// El mazo recibido no tiene la forma esperada (no es un problema de reglas).
+/// The received deck does not have the expected shape (this is not a rules problem).
 class DeckFormatError : public std::runtime_error {
 public:
     using std::runtime_error::runtime_error;
 };
 
-/// Entero JSON que cabe en un int; std::nullopt si no es entero o no cabe.
+/// A JSON integer that fits in an int; std::nullopt if it is not an integer or does not fit.
 [[nodiscard]] std::optional<int> to_int(const nlohmann::json& value) noexcept;
 
-/// Lee un mazo con la forma {"seeker","legacy","terrain","main":[{"card","copies"}],"side":[...]}.
-/// Lanza DeckFormatError si la forma no es válida.
+/// Reads a deck shaped like {"seeker","legacy","terrain","main":[{"card","copies"}],"side":[...]}.
+/// Throws DeckFormatError if the shape is not valid.
 [[nodiscard]] Deck deck_from_json(const nlohmann::json& value);
 
 [[nodiscard]] nlohmann::json issues_to_json(const std::vector<ValidationIssue>& issues);
 [[nodiscard]] nlohmann::json pack_info_to_json(const RulesPack& pack);
 
-/// Serializa en UTF-8; cualquier byte no válido se sustituye en vez de lanzar una excepción.
+/// Serializes to UTF-8; any invalid byte is replaced instead of throwing an exception.
 [[nodiscard]] std::string to_text(const nlohmann::json& value);
 
 }  // namespace mc::core::detail

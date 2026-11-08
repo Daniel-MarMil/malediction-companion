@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
 
-# Compilación
+# Build
 /build/
 /out/
 /vcpkg_installed/
@@ -11,11 +11,11 @@
 CMakeUserPresets.json
 compile_commands.json
 
-# Contenido oficial de Malediction: nunca va al repositorio (ADR-12)
+# Official Malediction content: it never goes into the repository (ADR-12)
 /content/official/*
 !/content/official/README.md
 
-# Cobertura, fuzzing y análisis
+# Coverage, fuzzing and analysis
 *.gcda
 *.gcno
 *.gcov
@@ -26,7 +26,7 @@ timeout-*
 oom-*
 scancode.json
 
-# Editores y sistema
+# Editors and operating system
 .idea/
 .vs/
 .vscode/

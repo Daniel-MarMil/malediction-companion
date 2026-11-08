@@ -2,8 +2,8 @@
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
 #
-# Descarga vcpkg en el commit de la línea base de vcpkg.json y lo prepara sin telemetría.
-# Uso: tools/ci/bootstrap-vcpkg.sh [carpeta]   (por defecto, .vcpkg en la raíz del repositorio)
+# Downloads vcpkg at the baseline commit of vcpkg.json and bootstraps it without telemetry.
+# Usage: tools/ci/bootstrap-vcpkg.sh [folder]   (default: .vcpkg at the repository root)
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -19,4 +19,4 @@ fi
 git -C "$target" -c advice.detachedHead=false checkout --quiet "$baseline"
 "$target/bootstrap-vcpkg.sh" -disableMetrics
 
-echo "vcpkg listo en $target (línea base $baseline)"
+echo "vcpkg ready at $target (baseline $baseline)"

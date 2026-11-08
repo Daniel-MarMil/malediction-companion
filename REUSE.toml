@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
 #
-# Licencia de los ficheros que no admiten comentarios (especificación REUSE).
-# content/official no aparece: ese contenido es de Loot Studios y no va al repositorio.
+# License of the files that cannot hold comments (REUSE specification).
+# content/official is not listed: that content belongs to Loot Studios and never goes into the repository.
 version = 1
 
 [[annotations]]

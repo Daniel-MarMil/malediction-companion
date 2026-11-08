@@ -15,23 +15,24 @@
 
 namespace mc::core {
 
-/// Parámetros de construcción del mazo. Vienen del paquete, no del código (ADR-06),
-/// para seguir las revisiones del reglamento sin publicar la app.
+/// Deck-building parameters. They come from the pack, not from the code (ADR-06),
+/// so that rules revisions do not require publishing a new app.
 struct DeckRules {
     int deck_min{30};
     int deck_max{50};
     int side_max{7};
-    /// Copias máximas por rango. Un rango sin entrada no puede ir en el mazo: la carta
-    /// legendaria es el propio Seeker.
+    /// Maximum copies per rank. A rank without an entry cannot go in the deck: the
+    /// legendary card is the Seeker itself.
     std::map<Rank, int> copy_limits{{Rank::Basic, 3}, {Rank::Elite, 2}, {Rank::Unique, 1}};
-    /// Si las cartas sin facción valen para cualquier mazo (pendiente de confirmar).
+    /// Whether unaligned cards are allowed in any deck. The Seekers League builder allows
+    /// them (checked on 2026-11-08).
     bool unaligned_cards_allowed{true};
-    /// Si las copias del mazo auxiliar suman a las del principal para el límite
-    /// (pendiente de confirmar). Si no, cada mazo cumple el límite por separado.
+    /// Whether side-deck copies count together with main-deck copies towards the limit
+    /// (to be confirmed). If not, each deck meets the limit on its own.
     bool copy_limits_include_side{true};
 };
 
-/// Metadatos del paquete (RF-02).
+/// Pack metadata (RF-02).
 struct PackInfo {
     std::string id;
     std::string version;
@@ -40,16 +41,16 @@ struct PackInfo {
     std::string license;
 };
 
-/// Error al leer un paquete de reglas.
+/// Error while reading a rules pack.
 class PackError : public std::runtime_error {
 public:
     using std::runtime_error::runtime_error;
 };
 
-/// Paquete de reglas inmutable: metadatos, reglas de mazo y cartas.
+/// Immutable rules pack: metadata, deck rules and cards.
 class RulesPack {
 public:
-    /// Lee un paquete en JSON. Lanza PackError si no es válido.
+    /// Reads a JSON pack. Throws PackError if it is not valid.
     [[nodiscard]] static RulesPack parse(std::string_view text);
 
     [[nodiscard]] const PackInfo& info() const noexcept { return info_; }
@@ -57,7 +58,7 @@ public:
     [[nodiscard]] const std::vector<Card>& cards() const noexcept { return cards_; }
     [[nodiscard]] std::size_t card_count() const noexcept { return cards_.size(); }
 
-    /// Busca una carta por su identificador; devuelve nullptr si no existe.
+    /// Looks up a card by its id; returns nullptr if there is none.
     [[nodiscard]] const Card* find(std::string_view id) const noexcept;
 
 private:
