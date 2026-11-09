@@ -17,7 +17,7 @@ namespace {
 
 constexpr std::array<std::pair<Rule, std::string_view>, 17> rule_names{{
     {Rule::SeekerMissing, "seeker_missing"},
-    {Rule::SeekerWrongType, "seeker_wrong_type"},
+    {Rule::SeekerInvalid, "seeker_invalid"},
     {Rule::LegacyMissing, "legacy_missing"},
     {Rule::LegacyWrongType, "legacy_wrong_type"},
     {Rule::LegacyMismatch, "legacy_mismatch"},
@@ -65,10 +65,13 @@ public:
 
     std::vector<ValidationIssue> run() {
         const Card* seeker = check_seeker();
-        check_legacy(seeker);
+        if (seeker == nullptr) {
+            return std::move(issues_);  // Without a valid Seeker the rest of the deck is not checked.
+        }
+        check_legacy(*seeker);
         check_terrain();
-        check_entries(deck_.main, main_copies_, main_count_, main_invalid_, seeker);
-        check_entries(deck_.side, side_copies_, side_count_, side_invalid_, seeker);
+        check_entries(deck_.main, main_copies_, main_count_, main_invalid_, *seeker);
+        check_entries(deck_.side, side_copies_, side_count_, side_invalid_, *seeker);
         check_copy_limits();
         check_invalid_cards();
         check_sizes();
@@ -95,20 +98,25 @@ private:
         return card;
     }
 
+    /// Returns the deck's Seeker, or nullptr after reporting why there is no valid one.
     const Card* check_seeker() {
         if (deck_.seeker_id.empty()) {
             add(Rule::SeekerMissing, {}, "the deck needs a Seeker");
             return nullptr;
         }
-        const Card* seeker = find_known(deck_.seeker_id);
-        if (seeker != nullptr && seeker->type != CardType::Seeker) {
-            add(Rule::SeekerWrongType, seeker->id, "it is a card of type " + std::string(to_string(seeker->type)));
+        const Card* seeker = pack_.find(deck_.seeker_id);
+        if (seeker == nullptr) {
+            add(Rule::SeekerInvalid, deck_.seeker_id, "the card is not in the rules pack");
+            return nullptr;
+        }
+        if (seeker->type != CardType::Seeker) {
+            add(Rule::SeekerInvalid, seeker->id, "it is a card of type " + std::string(to_string(seeker->type)));
             return nullptr;
         }
         return seeker;
     }
 
-    void check_legacy(const Card* seeker) {
+    void check_legacy(const Card& seeker) {
         if (deck_.legacy_id.empty()) {
             add(Rule::LegacyMissing, {}, "the deck needs the Legacy of its Seeker");
             return;
@@ -119,8 +127,8 @@ private:
         }
         if (legacy->type != CardType::Legacy) {
             add(Rule::LegacyWrongType, legacy->id, "it is a card of type " + std::string(to_string(legacy->type)));
-        } else if (seeker != nullptr && legacy->seeker_id != seeker->id) {
-            add(Rule::LegacyMismatch, legacy->id, "it belongs to " + legacy->seeker_id + ", not to " + seeker->id);
+        } else if (legacy->seeker_id != seeker.id) {
+            add(Rule::LegacyMismatch, legacy->id, "it belongs to " + legacy->seeker_id + ", not to " + seeker.id);
         }
     }
 
@@ -139,7 +147,7 @@ private:
     /// Every copy counts towards the size, also the copies of cards that should not be in the
     /// deck: those are added to `invalid` as well.
     void check_entries(const std::vector<DeckEntry>& entries, CopyCounts& copies, std::int64_t& count,
-                       std::int64_t& invalid, const Card* seeker) {
+                       std::int64_t& invalid, const Card& seeker) {
         for (const DeckEntry& entry : entries) {
             if (entry.copies < 1) {
                 add_once(Rule::InvalidCopies, entry.card_id, "every line needs at least one copy");
@@ -154,7 +162,7 @@ private:
 
     /// Checks the card on one line and adds its copies towards the copy limits. Returns false
     /// if the card should not be in the deck.
-    bool check_card(const DeckEntry& entry, CopyCounts& copies, const Card* seeker) {
+    bool check_card(const DeckEntry& entry, CopyCounts& copies, const Card& seeker) {
         const Card* card = find_known(entry.card_id);
         if (card == nullptr) {
             return false;
@@ -176,7 +184,7 @@ private:
     }
 
     /// Returns false if the card's sigils do not allow it in the deck.
-    bool check_sigils(const Card& card, const Card* seeker) {
+    bool check_sigils(const Card& card, const Card& seeker) {
         if (card.sigils.empty()) {
             if (!rules_.unaligned_cards_allowed) {
                 add_once(Rule::SigilMismatch, card.id, "these rules do not allow unaligned cards");
@@ -184,13 +192,10 @@ private:
             }
             return true;
         }
-        if (seeker == nullptr) {
-            return true;  // Without a valid Seeker there are no sigils to compare with.
-        }
         // A card is allowed only if every one of its sigils is on the Seeker.
-        if (!std::ranges::includes(seeker->sigils, card.sigils)) {
+        if (!std::ranges::includes(seeker.sigils, card.sigils)) {
             add_once(Rule::SigilMismatch, card.id,
-                     "card sigils: " + join(card.sigils) + "; Seeker sigils: " + join(seeker->sigils));
+                     "card sigils: " + join(card.sigils) + "; Seeker sigils: " + join(seeker.sigils));
             return false;
         }
         return true;

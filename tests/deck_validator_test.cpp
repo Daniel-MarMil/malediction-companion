@@ -44,27 +44,45 @@ TEST(DeckValidator, AcceptsAValidDeck) {
     EXPECT_TRUE(issues.empty()) << to_string(issues.front().rule) << ": " << issues.front().detail;
 }
 
-TEST(DeckValidator, ReportsAnEmptyDeck) {
-    const auto issues = validate(Deck{});
-    EXPECT_TRUE(has_issue(issues, Rule::SeekerMissing));
-    EXPECT_TRUE(has_issue(issues, Rule::LegacyMissing));
-    EXPECT_TRUE(has_issue(issues, Rule::TerrainMissing));
-    EXPECT_TRUE(has_issue(issues, Rule::DeckTooSmall));
-    EXPECT_EQ(issues.size(), 4U);
+TEST(DeckValidator, ReportsOnlyTheSeekerWhenItIsMissing) {
+    // Without a Seeker the rest of the deck is not checked, so that is the only issue.
+    auto issues = validate(Deck{});
+    ASSERT_EQ(issues.size(), 1U);
+    EXPECT_EQ(issues.front().rule, Rule::SeekerMissing);
+
+    Deck deck = valid_ash_deck();
+    deck.seeker_id.clear();
+    deck.terrain_id.clear();
+    deck.main.push_back({"T-TIDE-U01", 1});
+    deck.main.push_back({"NOT-IN-PACK", 1});
+    issues = validate(deck);
+    ASSERT_EQ(issues.size(), 1U);
+    EXPECT_EQ(issues.front().rule, Rule::SeekerMissing);
 }
 
-TEST(DeckValidator, ChecksTheSeeker) {
+TEST(DeckValidator, ReportsOnlyTheSeekerWhenItIsNotValid) {
     Deck deck = valid_ash_deck();
     deck.seeker_id = "T-ASH-U01";
+    deck.legacy_id = "T-LEG-THORN";
+    deck.main.push_back({"T-TIDE-U01", 1});
     auto issues = validate(deck);
-    EXPECT_TRUE(has_issue(issues, Rule::SeekerWrongType, "T-ASH-U01"));
-    // Without a valid Seeker, neither the sigils nor the Legacy are compared.
-    EXPECT_FALSE(has_issue(issues, Rule::SigilMismatch));
-    EXPECT_FALSE(has_issue(issues, Rule::LegacyMismatch));
+    ASSERT_EQ(issues.size(), 1U);
+    EXPECT_TRUE(has_issue(issues, Rule::SeekerInvalid, "T-ASH-U01"));
 
     deck.seeker_id = "T-SEEK-UNKNOWN";
     issues = validate(deck);
-    EXPECT_TRUE(has_issue(issues, Rule::UnknownCard, "T-SEEK-UNKNOWN"));
+    ASSERT_EQ(issues.size(), 1U);
+    EXPECT_TRUE(has_issue(issues, Rule::SeekerInvalid, "T-SEEK-UNKNOWN"));
+}
+
+TEST(DeckValidator, ReportsAnEmptyDeckWithASeeker) {
+    Deck deck;
+    deck.seeker_id = "T-SEEK-ASH";
+    const auto issues = validate(deck);
+    EXPECT_TRUE(has_issue(issues, Rule::LegacyMissing));
+    EXPECT_TRUE(has_issue(issues, Rule::TerrainMissing));
+    EXPECT_TRUE(has_issue(issues, Rule::DeckTooSmall));
+    EXPECT_EQ(issues.size(), 3U);
 }
 
 TEST(DeckValidator, ChecksTheLegacy) {
@@ -284,12 +302,6 @@ TEST(DeckValidator, DoesNotMarkTheDeckForOtherProblems) {
     EXPECT_TRUE(has_issue(issues, Rule::InvalidCopies, "T-ASH-E01"));
     EXPECT_TRUE(has_issue(issues, Rule::TooManyCopies, "T-ASH-U01"));
     EXPECT_FALSE(has_issue(issues, Rule::DeckHasInvalidCards));
-
-    // Without a valid Seeker the sigils cannot be compared, so they do not mark the deck.
-    Deck no_seeker = valid_ash_deck();
-    no_seeker.seeker_id.clear();
-    no_seeker.main.push_back({"T-TIDE-U01", 1});
-    EXPECT_FALSE(has_issue(validate(no_seeker), Rule::DeckHasInvalidCards));
 }
 
 TEST(DeckValidator, MarksTheDeckForUnalignedCardsWhenTheRulesForbidThem) {

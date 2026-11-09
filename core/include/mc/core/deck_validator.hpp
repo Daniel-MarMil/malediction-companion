@@ -15,8 +15,12 @@ namespace mc::core {
 
 /// A deck-building rule that was broken. The app translates the code; the detail is for debugging.
 enum class Rule : std::uint8_t {
+    /// No Seeker was chosen. Without a valid Seeker the rest of the deck is not checked, so this
+    /// is then the only issue.
     SeekerMissing,
-    SeekerWrongType,
+    /// The Seeker is not in the pack or is not a Seeker card. As with SeekerMissing, it is then
+    /// the only issue.
+    SeekerInvalid,
     LegacyMissing,
     LegacyWrongType,
     LegacyMismatch,

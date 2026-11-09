@@ -154,6 +154,36 @@ TEST(DeckProperties, CardsThatShouldNotBeThereCountAndMarkTheDeck) {
     EXPECT_TRUE(ok);
 }
 
+TEST(DeckProperties, WithoutAValidSeekerItIsTheOnlyIssue) {
+    std::vector<std::string> ids;
+    for (const Card& card : test_pack().cards()) {
+        ids.push_back(card.id);
+    }
+    ids.emplace_back("NOT-IN-PACK");
+    ids.emplace_back("");
+    const bool ok = rc::check("without a valid Seeker, the Seeker is the only issue", [&] {
+        const auto picks = *rc::gen::container<std::vector<std::size_t>>(rc::gen::inRange<std::size_t>(0, ids.size()));
+        Deck deck = dual_deck({});
+        for (const std::size_t pick : picks) {
+            deck.main.push_back({ids[pick], *rc::gen::inRange(-1, 5)});
+        }
+        deck.seeker_id = *rc::gen::elementOf(ids);
+        deck.legacy_id = *rc::gen::elementOf(ids);
+        deck.terrain_id = *rc::gen::elementOf(ids);
+        const Card* seeker = test_pack().find(deck.seeker_id);
+        const bool valid_seeker = seeker != nullptr && seeker->type == CardType::Seeker;
+        const auto issues = validate_deck(test_pack(), deck);
+        if (valid_seeker) {
+            RC_ASSERT(!mc::test::has_issue(issues, Rule::SeekerMissing));
+            RC_ASSERT(!mc::test::has_issue(issues, Rule::SeekerInvalid));
+        } else {
+            RC_ASSERT(issues.size() == 1U);
+            RC_ASSERT(issues.front().rule == (deck.seeker_id.empty() ? Rule::SeekerMissing : Rule::SeekerInvalid));
+        }
+    });
+    EXPECT_TRUE(ok);
+}
+
 TEST(DeckProperties, ExceedingALimitIsAlwaysReported) {
     const auto legal = legal_for_dual_seeker();
     const bool ok = rc::check("going over the copy limit of a card is always detected", [&] {

@@ -145,11 +145,12 @@ mc_session_destroy(session);
 
 The deck has the shape `{"seeker","legacy","terrain","main":[{"card","copies"}],"side":[...]}`.
 Each issue carries a stable code that the app translates: `seeker_missing`,
-`seeker_wrong_type`, `legacy_missing`, `legacy_wrong_type`, `legacy_mismatch`, `terrain_missing`,
+`seeker_invalid`, `legacy_missing`, `legacy_wrong_type`, `legacy_mismatch`, `terrain_missing`,
 `terrain_wrong_type`, `unknown_card`, `invalid_copies`, `card_type_not_allowed`,
 `rank_not_allowed`, `sigil_mismatch`, `too_many_copies`, `deck_has_invalid_cards`,
-`deck_too_small`, `deck_too_large` and `side_too_large`. Cards that should not be in the deck
-still count towards its size: each one gets its own issue, and the deck also gets
+`deck_too_small`, `deck_too_large` and `side_too_large`. Without a valid Seeker the rest of the
+deck is not checked, so the only issue is `seeker_missing` or `seeker_invalid`. Cards that should
+not be in the deck still count towards its size: each one gets its own issue, and the deck also gets
 `deck_has_invalid_cards`. The `detail` text is in English and meant for debugging, not for
 players.
 

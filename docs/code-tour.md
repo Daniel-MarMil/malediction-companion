@@ -127,7 +127,7 @@ it returns `MC_ERR_INTERNAL`.
 
 | Step | Rule codes |
 |---|---|
-| Seeker: present, in the pack, of type `seeker` | `seeker_missing`, `unknown_card`, `seeker_wrong_type` |
+| Seeker: chosen, in the pack and of type `seeker`. Without a valid Seeker the steps below do not run, so this is the only issue | `seeker_missing`, `seeker_invalid` |
 | Legacy: present, of type `legacy`, belonging to that Seeker | `legacy_missing`, `legacy_wrong_type`, `legacy_mismatch` |
 | Terrain: present, of type `terrain`; it can be of any faction | `terrain_missing`, `terrain_wrong_type` |
 | Each line of the main deck and the side deck: at least one copy, a known card, a type that goes in the deck (unit, spell or item), a rank with a copy limit, and only sigils that the Seeker has | `invalid_copies`, `unknown_card`, `card_type_not_allowed`, `rank_not_allowed`, `sigil_mismatch` |
@@ -153,7 +153,7 @@ refers to when there is one, and a `detail` in English for debugging.
 | `tests/card_test.cpp` | Type and rank codes go both ways; unknown names are rejected; rule codes are unique and in snake_case |
 | `tests/rules_pack_test.cpp` | The test pack; defaults; sorted sigils; every kind of malformed pack is rejected with the path of the field |
 | `tests/deck_validator_test.cpp` | Each rule on its own: Seeker, Legacy, terrain, sizes, side deck, copy limits (also across lines and with the side deck), types, ranks, sigils, unaligned cards, cards that should not be in the deck and very large copy counts |
-| `tests/deck_properties_test.cpp` | Properties checked by RapidCheck on hundreds of random decks: legal cards within their limits only fail on size, order and split lines do not change the result, going over a limit is always detected, cards that should not be in the deck always count towards the size and mark it, and validation is deterministic |
+| `tests/deck_properties_test.cpp` | Properties checked by RapidCheck on hundreds of random decks: legal cards within their limits only fail on size, order and split lines do not change the result, going over a limit is always detected, cards that should not be in the deck always count towards the size and mark it, without a valid Seeker that is the only issue, and validation is deterministic |
 | `tests/signature_test.cpp` | Ed25519 with the RFC 8032 test vector; a modified pack, a modified signature, another key and wrong sizes are rejected |
 | `tests/c_api_test.cpp` | The C API as the apps will use it: sessions, null-terminated buffers, every error code, size limits, argument checks and signatures |
 | `tests/c_header_check.c` | `mc_api.h` compiles as C11 and links from C |
