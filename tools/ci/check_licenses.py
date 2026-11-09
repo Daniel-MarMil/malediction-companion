@@ -5,7 +5,8 @@
 
 1. Every file of our own carries the Apache-2.0 SPDX header, or REUSE.toml covers it.
 2. With --vcpkg-installed: the vcpkg dependencies have allowed licenses, according to
-   the SPDX SBOM that vcpkg generates for each package.
+   the SPDX SBOM that vcpkg generates for each package. The build tools in BUILD_TOOLS
+   were reviewed by hand instead; they pass only while their copyright file is unchanged.
 3. With --scancode: the ScanCode Toolkit JSON report finds no GPL, LGPL or AGPL
    in our own code.
 
@@ -16,11 +17,13 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import subprocess
 import sys
 import tomllib
+from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -29,6 +32,26 @@ LICENSE_ID = "Apache-2.0"
 # Licenses allowed for dependencies (ADR-08).
 ALLOWED = {"Apache-2.0", "MIT", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Zlib", "BSL-1.0", "CC0-1.0", "Unlicense", "0BSD"}
 FORBIDDEN = re.compile(r"\b(A|L)?GPL", re.IGNORECASE)
+
+
+@dataclass(frozen=True)
+class BuildTool:
+    """vcpkg port reviewed by hand: it is used only to build and is not distributed (ADR-08)."""
+
+    license: str
+    reason: str
+    # SHA-256 of share/<port>/copyright when it was reviewed; any change needs a new review.
+    copyright_sha256: str
+
+
+# Explicit list, with no wildcards: a new build tool fails until someone reviews it.
+BUILD_TOOLS = {
+    "vcpkg-make": BuildTool(
+        license="MIT (CMake scripts) and GPL-2.0-or-later (GNU Automake scripts)",
+        reason="host dependency of libsodium, used only to build and not distributed",
+        copyright_sha256="be3035bc85008f76b42ccb76677269fb1a6916d669abf2c79b63c604a4ef2365",
+    ),
+}
 
 HEADER_SUFFIXES = {".c", ".h", ".cpp", ".hpp", ".cmake", ".py", ".sh", ".yaml", ".yml", ".toml", ".md", ".map"}
 HEADER_NAMES = {"CMakeLists.txt", ".clang-format", ".clang-tidy", ".gitignore", ".gitattributes", ".editorconfig"}
@@ -106,6 +129,19 @@ def expression_allowed(expression: str) -> bool:
     return bool(licenses) and all(item in ALLOWED for item in licenses)
 
 
+def check_build_tool(name: str, tool: BuildTool, copyright_file: Path) -> list[str]:
+    if not copyright_file.is_file():
+        return [f"vcpkg {name}: {copyright_file} not found; review the build tool again"]
+    digest = hashlib.sha256(copyright_file.read_bytes()).hexdigest()
+    if digest != tool.copyright_sha256:
+        return [
+            f"vcpkg {name}: its copyright file changed (SHA-256 {digest}, reviewed "
+            f"{tool.copyright_sha256}); review its license again and update BUILD_TOOLS"
+        ]
+    print(f"BUILD vcpkg {name}: {tool.license}; {tool.reason}")
+    return []
+
+
 def check_vcpkg(installed: Path) -> list[str]:
     errors = []
     sboms = sorted(installed.glob("*/share/*/vcpkg.spdx.json"))
@@ -115,6 +151,9 @@ def check_vcpkg(installed: Path) -> list[str]:
         data = json.loads(sbom.read_text(encoding="utf-8"))
         package = data.get("packages", [{}])[0]
         name = package.get("name", sbom.parent.name)
+        if name in BUILD_TOOLS:
+            errors += check_build_tool(name, BUILD_TOOLS[name], sbom.parent / "copyright")
+            continue
         license_expression = package.get("licenseConcluded") or "NOASSERTION"
         if license_expression == "NOASSERTION":
             errors.append(f"vcpkg {name}: the SBOM declares no license")
