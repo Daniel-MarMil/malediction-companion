@@ -22,6 +22,16 @@ std::vector<ValidationIssue> validate(const Deck& deck) {
     return validate_deck(test_pack(), deck);
 }
 
+/// The detail of the first issue with that rule, or an empty text if there is none.
+std::string detail_of(const std::vector<ValidationIssue>& issues, Rule rule) {
+    for (const auto& issue : issues) {
+        if (issue.rule == rule) {
+            return issue.detail;
+        }
+    }
+    return {};
+}
+
 /// The test pack with different deck rules.
 RulesPack pack_with_rules(const char* key, bool value) {
     auto json = nlohmann::json::parse(mc::test::test_pack_json());
@@ -187,7 +197,8 @@ TEST(DeckValidator, ChecksSigils) {
     deck.main.push_back({"T-THORN-U01", 1});
     issues = validate(deck);
     EXPECT_TRUE(has_issue(issues, Rule::SigilMismatch, "T-THORN-U01"));
-    EXPECT_EQ(issues.size(), 1U);
+    EXPECT_TRUE(has_issue(issues, Rule::DeckHasInvalidCards));
+    EXPECT_EQ(issues.size(), 2U);
 }
 
 TEST(DeckValidator, UnalignedCardsDependOnTheRules) {
@@ -209,6 +220,84 @@ TEST(DeckValidator, ReportsInvalidCopiesAndUnknownCards) {
     EXPECT_TRUE(has_issue(issues, Rule::InvalidCopies, "T-ASH-E01"));
     EXPECT_TRUE(has_issue(issues, Rule::InvalidCopies, "T-ASH-E02"));
     EXPECT_EQ(count_rule(issues, Rule::UnknownCard), 1U);
+}
+
+TEST(DeckValidator, CountsCardsThatShouldNotBeThereAndMarksTheDeck) {
+    // 27 valid cards and 3 that should not be in the deck: 30 cards, so the size is right,
+    // but the deck is not valid.
+    Deck deck = valid_ash_deck();
+    deck.main.pop_back();
+    deck.main.push_back({"NOT-IN-PACK", 1});
+    deck.main.push_back({"T-REL-01", 1});
+    deck.main.push_back({"T-TIDE-U01", 1});
+    auto issues = validate(deck);
+    EXPECT_TRUE(has_issue(issues, Rule::UnknownCard, "NOT-IN-PACK"));
+    EXPECT_TRUE(has_issue(issues, Rule::CardTypeNotAllowed, "T-REL-01"));
+    EXPECT_TRUE(has_issue(issues, Rule::SigilMismatch, "T-TIDE-U01"));
+    EXPECT_TRUE(has_issue(issues, Rule::DeckHasInvalidCards));
+    EXPECT_FALSE(has_issue(issues, Rule::DeckTooSmall));
+    EXPECT_EQ(issues.size(), 4U);
+    EXPECT_EQ(detail_of(issues, Rule::DeckHasInvalidCards),
+              "cards that should not be in the deck: 3 of 30 in the main deck");
+
+    // Without them, the deck is too small and has nothing else wrong.
+    deck.main.resize(9);
+    issues = validate(deck);
+    EXPECT_TRUE(has_issue(issues, Rule::DeckTooSmall));
+    EXPECT_EQ(issues.size(), 1U);
+}
+
+TEST(DeckValidator, CountsEveryCopyOfACardThatShouldNotBeThere) {
+    Deck deck = valid_ash_deck();
+    deck.main.push_back({"NOT-IN-PACK", 2});
+    deck.main.push_back({"NOT-IN-PACK", 3});
+    const auto issues = validate(deck);
+    EXPECT_EQ(count_rule(issues, Rule::UnknownCard), 1U);
+    EXPECT_EQ(count_rule(issues, Rule::DeckHasInvalidCards), 1U);
+    EXPECT_EQ(detail_of(issues, Rule::DeckHasInvalidCards),
+              "cards that should not be in the deck: 5 of 35 in the main deck");
+}
+
+TEST(DeckValidator, MarksTheDeckForCardsInTheSideDeck) {
+    Deck deck = valid_ash_deck();
+    deck.side = entries({{"T-ASH-L01", 1}, {"T-NEU-I01", 2}});
+    auto issues = validate(deck);
+    EXPECT_TRUE(has_issue(issues, Rule::RankNotAllowed, "T-ASH-L01"));
+    EXPECT_EQ(detail_of(issues, Rule::DeckHasInvalidCards),
+              "cards that should not be in the deck: 1 of 3 in the side deck");
+
+    deck.main.push_back({"T-SEEK-ASH", 1});
+    issues = validate(deck);
+    EXPECT_EQ(count_rule(issues, Rule::DeckHasInvalidCards), 1U);
+    EXPECT_EQ(detail_of(issues, Rule::DeckHasInvalidCards),
+              "cards that should not be in the deck: 1 of 31 in the main deck, 1 of 3 in the side deck");
+}
+
+TEST(DeckValidator, DoesNotMarkTheDeckForOtherProblems) {
+    // Lines without copies, too many copies or a missing slot are problems of their own, not
+    // cards that should not be in the deck.
+    Deck deck = valid_ash_deck();
+    deck.main.push_back({"T-ASH-E01", 0});
+    deck.main.front().copies = 4;
+    deck.terrain_id.clear();
+    const auto issues = validate(deck);
+    EXPECT_TRUE(has_issue(issues, Rule::InvalidCopies, "T-ASH-E01"));
+    EXPECT_TRUE(has_issue(issues, Rule::TooManyCopies, "T-ASH-U01"));
+    EXPECT_FALSE(has_issue(issues, Rule::DeckHasInvalidCards));
+
+    // Without a valid Seeker the sigils cannot be compared, so they do not mark the deck.
+    Deck no_seeker = valid_ash_deck();
+    no_seeker.seeker_id.clear();
+    no_seeker.main.push_back({"T-TIDE-U01", 1});
+    EXPECT_FALSE(has_issue(validate(no_seeker), Rule::DeckHasInvalidCards));
+}
+
+TEST(DeckValidator, MarksTheDeckForUnalignedCardsWhenTheRulesForbidThem) {
+    Deck deck = valid_ash_deck();
+    deck.main.push_back({"T-NEU-I01", 2});
+    const RulesPack strict = pack_with_rules("unaligned_cards_allowed", false);
+    EXPECT_EQ(detail_of(validate_deck(strict, deck), Rule::DeckHasInvalidCards),
+              "cards that should not be in the deck: 2 of 32 in the main deck");
 }
 
 TEST(DeckValidator, KeepsALargeCopyCountWithoutOverflow) {

@@ -15,6 +15,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <numeric>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -119,6 +120,36 @@ TEST(DeckProperties, OrderAndSplittingDoNotChangeTheResult) {
         const auto original = validate_deck(test_pack(), dual_deck(lines));
         const auto rearranged = validate_deck(test_pack(), dual_deck(shuffled(std::move(split))));
         RC_ASSERT(rule_set(original) == rule_set(rearranged));
+    });
+    EXPECT_TRUE(ok);
+}
+
+TEST(DeckProperties, CardsThatShouldNotBeThereCountAndMarkTheDeck) {
+    std::vector<std::string> ids;
+    for (const Card& card : test_pack().cards()) {
+        ids.push_back(card.id);
+    }
+    ids.emplace_back("NOT-IN-PACK");
+    std::set<std::string> legal;
+    for (const Card* card : legal_for_dual_seeker()) {
+        legal.insert(card->id);
+    }
+    const bool ok = rc::check("cards that should not be in the deck count towards its size and mark it", [&] {
+        const auto picks = *rc::gen::container<std::vector<std::size_t>>(rc::gen::inRange<std::size_t>(0, ids.size()));
+        std::vector<DeckEntry> lines;
+        std::int64_t invalid = 0;
+        for (const std::size_t pick : picks) {
+            const int copies = *rc::gen::inRange(1, 5);
+            lines.push_back({ids[pick], copies});
+            if (!legal.contains(ids[pick])) {
+                invalid += copies;
+            }
+        }
+        const auto size = total_copies(lines);
+        const auto issues = validate_deck(test_pack(), dual_deck(std::move(lines)));
+        RC_ASSERT(mc::test::has_issue(issues, Rule::DeckHasInvalidCards) == (invalid > 0));
+        RC_ASSERT(mc::test::has_issue(issues, Rule::DeckTooSmall) == (size < 30));
+        RC_ASSERT(mc::test::has_issue(issues, Rule::DeckTooLarge) == (size > 50));
     });
     EXPECT_TRUE(ok);
 }

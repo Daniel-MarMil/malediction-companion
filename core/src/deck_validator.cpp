@@ -15,7 +15,7 @@
 namespace mc::core {
 namespace {
 
-constexpr std::array<std::pair<Rule, std::string_view>, 16> rule_names{{
+constexpr std::array<std::pair<Rule, std::string_view>, 17> rule_names{{
     {Rule::SeekerMissing, "seeker_missing"},
     {Rule::SeekerWrongType, "seeker_wrong_type"},
     {Rule::LegacyMissing, "legacy_missing"},
@@ -29,6 +29,7 @@ constexpr std::array<std::pair<Rule, std::string_view>, 16> rule_names{{
     {Rule::RankNotAllowed, "rank_not_allowed"},
     {Rule::SigilMismatch, "sigil_mismatch"},
     {Rule::TooManyCopies, "too_many_copies"},
+    {Rule::DeckHasInvalidCards, "deck_has_invalid_cards"},
     {Rule::DeckTooSmall, "deck_too_small"},
     {Rule::DeckTooLarge, "deck_too_large"},
     {Rule::SideTooLarge, "side_too_large"},
@@ -66,9 +67,10 @@ public:
         const Card* seeker = check_seeker();
         check_legacy(seeker);
         check_terrain();
-        check_entries(deck_.main, main_copies_, main_count_, seeker);
-        check_entries(deck_.side, side_copies_, side_count_, seeker);
+        check_entries(deck_.main, main_copies_, main_count_, main_invalid_, seeker);
+        check_entries(deck_.side, side_copies_, side_count_, side_invalid_, seeker);
         check_copy_limits();
+        check_invalid_cards();
         check_sizes();
         return std::move(issues_);
     }
@@ -134,50 +136,64 @@ private:
         }
     }
 
+    /// Every copy counts towards the size, also the copies of cards that should not be in the
+    /// deck: those are added to `invalid` as well.
     void check_entries(const std::vector<DeckEntry>& entries, CopyCounts& copies, std::int64_t& count,
-                       const Card* seeker) {
+                       std::int64_t& invalid, const Card* seeker) {
         for (const DeckEntry& entry : entries) {
             if (entry.copies < 1) {
                 add_once(Rule::InvalidCopies, entry.card_id, "every line needs at least one copy");
                 continue;
             }
             count += entry.copies;
-            const Card* card = find_known(entry.card_id);
-            if (card == nullptr) {
-                continue;
+            if (!check_card(entry, copies, seeker)) {
+                invalid += entry.copies;
             }
-            if (!goes_in_deck(card->type)) {
-                add_once(Rule::CardTypeNotAllowed, card->id,
-                         "cards of type " + std::string(to_string(card->type)) + " do not go in the deck");
-                continue;
-            }
-            if (!rules_.copy_limits.contains(card->rank)) {
-                add_once(Rule::RankNotAllowed, card->id,
-                         "cards of rank " + std::string(to_string(card->rank)) + " do not go in the deck");
-                continue;
-            }
-            CopyCount& total = copies[card->id];
-            total.rank = card->rank;
-            total.copies += entry.copies;
-            check_sigils(*card, seeker);
         }
     }
 
-    void check_sigils(const Card& card, const Card* seeker) {
+    /// Checks the card on one line and adds its copies towards the copy limits. Returns false
+    /// if the card should not be in the deck.
+    bool check_card(const DeckEntry& entry, CopyCounts& copies, const Card* seeker) {
+        const Card* card = find_known(entry.card_id);
+        if (card == nullptr) {
+            return false;
+        }
+        if (!goes_in_deck(card->type)) {
+            add_once(Rule::CardTypeNotAllowed, card->id,
+                     "cards of type " + std::string(to_string(card->type)) + " do not go in the deck");
+            return false;
+        }
+        if (!rules_.copy_limits.contains(card->rank)) {
+            add_once(Rule::RankNotAllowed, card->id,
+                     "cards of rank " + std::string(to_string(card->rank)) + " do not go in the deck");
+            return false;
+        }
+        CopyCount& total = copies[card->id];
+        total.rank = card->rank;
+        total.copies += entry.copies;
+        return check_sigils(*card, seeker);
+    }
+
+    /// Returns false if the card's sigils do not allow it in the deck.
+    bool check_sigils(const Card& card, const Card* seeker) {
         if (card.sigils.empty()) {
             if (!rules_.unaligned_cards_allowed) {
                 add_once(Rule::SigilMismatch, card.id, "these rules do not allow unaligned cards");
+                return false;
             }
-            return;
+            return true;
         }
         if (seeker == nullptr) {
-            return;  // Without a valid Seeker there are no sigils to compare with.
+            return true;  // Without a valid Seeker there are no sigils to compare with.
         }
         // A card is allowed only if every one of its sigils is on the Seeker.
         if (!std::ranges::includes(seeker->sigils, card.sigils)) {
             add_once(Rule::SigilMismatch, card.id,
                      "card sigils: " + join(card.sigils) + "; Seeker sigils: " + join(seeker->sigils));
+            return false;
         }
+        return true;
     }
 
     void check_copy_limits() {
@@ -206,6 +222,23 @@ private:
         }
     }
 
+    /// Cards that should not be in the deck still count towards its size, so the deck as a whole
+    /// is marked too, with how many of those cards each deck has.
+    void check_invalid_cards() {
+        if (main_invalid_ == 0 && side_invalid_ == 0) {
+            return;
+        }
+        std::string detail = "cards that should not be in the deck:";
+        if (main_invalid_ > 0) {
+            detail += " " + std::to_string(main_invalid_) + " of " + std::to_string(main_count_) + " in the main deck";
+        }
+        if (side_invalid_ > 0) {
+            detail += main_invalid_ > 0 ? ", " : " ";
+            detail += std::to_string(side_invalid_) + " of " + std::to_string(side_count_) + " in the side deck";
+        }
+        add(Rule::DeckHasInvalidCards, {}, std::move(detail));
+    }
+
     void check_sizes() {
         if (main_count_ < rules_.deck_min) {
             add(Rule::DeckTooSmall, {},
@@ -231,6 +264,8 @@ private:
     CopyCounts side_copies_;
     std::int64_t main_count_{0};
     std::int64_t side_count_{0};
+    std::int64_t main_invalid_{0};
+    std::int64_t side_invalid_{0};
 };
 
 }  // namespace

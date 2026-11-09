@@ -28,6 +28,10 @@ enum class Rule : std::uint8_t {
     RankNotAllowed,
     SigilMismatch,
     TooManyCopies,
+    /// The deck holds cards that should not be in it: unknown cards, types that do not go in
+    /// the deck, ranks without a copy limit or sigils that the Seeker does not have. Their
+    /// copies still count towards the deck size, and each card also gets its own issue.
+    DeckHasInvalidCards,
     DeckTooSmall,
     DeckTooLarge,
     SideTooLarge,

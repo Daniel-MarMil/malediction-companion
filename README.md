@@ -147,8 +147,11 @@ The deck has the shape `{"seeker","legacy","terrain","main":[{"card","copies"}],
 Each issue carries a stable code that the app translates: `seeker_missing`,
 `seeker_wrong_type`, `legacy_missing`, `legacy_wrong_type`, `legacy_mismatch`, `terrain_missing`,
 `terrain_wrong_type`, `unknown_card`, `invalid_copies`, `card_type_not_allowed`,
-`rank_not_allowed`, `sigil_mismatch`, `too_many_copies`, `deck_too_small`, `deck_too_large` and
-`side_too_large`. The `detail` text is in English and meant for debugging, not for players.
+`rank_not_allowed`, `sigil_mismatch`, `too_many_copies`, `deck_has_invalid_cards`,
+`deck_too_small`, `deck_too_large` and `side_too_large`. Cards that should not be in the deck
+still count towards its size: each one gets its own issue, and the deck also gets
+`deck_has_invalid_cards`. The `detail` text is in English and meant for debugging, not for
+players.
 
 `mc_cli` runs these commands from the command line, for example:
 

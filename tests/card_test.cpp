@@ -44,7 +44,7 @@ TEST(Rule, CodesAreUniqueAndSnakeCase) {
         EXPECT_EQ(code.find_first_not_of("abcdefghijklmnopqrstuvwxyz_"), std::string::npos) << code;
         EXPECT_TRUE(codes.insert(code).second) << "duplicate code: " << code;
     }
-    EXPECT_EQ(codes.size(), 16U);
+    EXPECT_EQ(codes.size(), 17U);
 }
 
 }  // namespace

@@ -18,7 +18,7 @@ Android app, the iOS app and the server will all use (ADR-01).
 | Part | State |
 |---|---|
 | Rules packs (`mc-rules-pack` format 1) | Done: reading and checking a pack, indexing its cards, Ed25519 signature check |
-| Deck validation (RF-06) | Done: 16 rule codes, with the limits taken from the pack |
+| Deck validation (RF-06) | Done: 17 rule codes, with the limits taken from the pack |
 | C API (ADR-11) | Done: six functions and two commands, `pack_info` and `validate_deck` |
 | `mc_cli` | Done: a command-line client to try the C API by hand |
 | Tests, sanitizers, coverage, fuzzing | Done, as local tasks and as CI workflows |
@@ -132,10 +132,14 @@ it returns `MC_ERR_INTERNAL`.
 | Terrain: present, of type `terrain`; it can be of any faction | `terrain_missing`, `terrain_wrong_type` |
 | Each line of the main deck and the side deck: at least one copy, a known card, a type that goes in the deck (unit, spell or item), a rank with a copy limit, and only sigils that the Seeker has | `invalid_copies`, `unknown_card`, `card_type_not_allowed`, `rank_not_allowed`, `sigil_mismatch` |
 | Copies of each card, adding up repeated lines and, by default, the side deck | `too_many_copies` |
+| Cards that should not be in the deck: unknown, of a type or rank that is not allowed, or with sigils the Seeker does not have | `deck_has_invalid_cards` |
 | Sizes: main deck between `deck_min` and `deck_max`, side deck up to `side_max` | `deck_too_small`, `deck_too_large`, `side_too_large` |
 
-An issue about a card is reported once, even if the card is on several lines. A Seeker with two
-factions accepts the cards of either faction and the cards of both. With the test pack, a deck
+An issue about a card is reported once, even if the card is on several lines. Every copy counts
+towards the size, also the copies of cards that should not be in the deck: those cards get their
+own issue, and the deck as a whole also gets `deck_has_invalid_cards`, which says how many of them
+each deck has. A Seeker with two factions accepts the cards of either faction and the cards of
+both. With the test pack, a deck
 has 30 to 50 cards and up to 7 in the side deck, with 3, 2 and 1 copies for basic, elite and
 unique cards; legendary cards have no copy limit in the pack, so they cannot go in the deck.
 
@@ -148,8 +152,8 @@ refers to when there is one, and a `detail` in English for debugging.
 |---|---|
 | `tests/card_test.cpp` | Type and rank codes go both ways; unknown names are rejected; rule codes are unique and in snake_case |
 | `tests/rules_pack_test.cpp` | The test pack; defaults; sorted sigils; every kind of malformed pack is rejected with the path of the field |
-| `tests/deck_validator_test.cpp` | Each rule on its own: Seeker, Legacy, terrain, sizes, side deck, copy limits (also across lines and with the side deck), types, ranks, sigils, unaligned cards and very large copy counts |
-| `tests/deck_properties_test.cpp` | Properties checked by RapidCheck on hundreds of random decks: legal cards within their limits only fail on size, order and split lines do not change the result, going over a limit is always detected, and validation is deterministic |
+| `tests/deck_validator_test.cpp` | Each rule on its own: Seeker, Legacy, terrain, sizes, side deck, copy limits (also across lines and with the side deck), types, ranks, sigils, unaligned cards, cards that should not be in the deck and very large copy counts |
+| `tests/deck_properties_test.cpp` | Properties checked by RapidCheck on hundreds of random decks: legal cards within their limits only fail on size, order and split lines do not change the result, going over a limit is always detected, cards that should not be in the deck always count towards the size and mark it, and validation is deterministic |
 | `tests/signature_test.cpp` | Ed25519 with the RFC 8032 test vector; a modified pack, a modified signature, another key and wrong sizes are rejected |
 | `tests/c_api_test.cpp` | The C API as the apps will use it: sessions, null-terminated buffers, every error code, size limits, argument checks and signatures |
 | `tests/c_header_check.c` | `mc_api.h` compiles as C11 and links from C |
@@ -194,7 +198,7 @@ pack=content/test/rules-pack.test.json
 echo '{"cmd":"validate_deck","deck":{"seeker":"T-SEEK-ASH"}}' | "$cli" "$pack"
 ```
 
-`invalid-deck.json` breaks eight rules at once. Part of the reply:
+`invalid-deck.json` breaks nine rules at once. Part of the reply:
 
 ```json
 {
@@ -203,9 +207,8 @@ echo '{"cmd":"validate_deck","deck":{"seeker":"T-SEEK-ASH"}}' | "$cli" "$pack"
     "rule": "sigil_mismatch"
 },
 {
-    "card": "T-ASH-U01",
-    "detail": "4 copies; the maximum for rank basic is 3",
-    "rule": "too_many_copies"
+    "detail": "cards that should not be in the deck: 5 of 12 in the main deck",
+    "rule": "deck_has_invalid_cards"
 }
 ```
 
