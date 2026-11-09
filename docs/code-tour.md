@@ -23,7 +23,7 @@ Android app, the iOS app and the server will all use (ADR-01).
 | `mc_cli` | Done: a command-line client to try the C API by hand |
 | Tests, sanitizers, coverage, fuzzing, license checks | Done, as local tasks in `tools/ci/ci.sh`; there is no remote CI |
 | Android library (`libmc_core.so`, 16 KB pages) | Set up (`tools/ci/ci.sh android`); no app uses it yet |
-| Pack keys (ADR-06) | Done: `mc_pack_tool` (keygen, sign, verify) and the trusted keys of the core; the development key is created by hand, and there are no release keys yet |
+| Pack keys (ADR-06) | Done: `mc_pack_tool` (keygen, sign, verify) and the trusted keys of the core; the development key exists (`keys/dev.pub`), and there are no release keys yet |
 | Android app, account service, server, iOS app | Not started (phases 1 to 5) |
 
 The official Malediction content is not part of the code: the tests use made-up cards
@@ -275,5 +275,3 @@ the private pack and the server's account service (ADR-05). In terms of code:
 - An Android Studio project in Kotlin with Jetpack Compose that builds `libmc_core.so` through
   Gradle and calls the C API through a thin JNI layer (ADR-02 and ADR-11).
 - The account service on the server (ADR-03 and ADR-05).
-- Still open from phase 0: creating the development key with `mc_pack_tool keygen dev` and
-  copying `dev.pub` to `keys/` (ADR-06).

@@ -58,7 +58,7 @@ content/official/     Private official content (ignored by git)
 docs/                 Architecture decisions (adr/), code tour and local environment guide
 tools/ci/             Local checks (tools/ci/ci.sh) and the scripts they use
 tools/pack/           mc_pack_tool: pack keys and signatures (development only)
-keys/                 Public development key, dev.pub, once it is created (ADR-06)
+keys/                 Public development key, dev.pub (ADR-06)
 tools/dev/            Local environment setup
 ```
 
