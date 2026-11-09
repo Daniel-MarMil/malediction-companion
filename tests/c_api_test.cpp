@@ -273,4 +273,26 @@ TEST(CApi, VerifiesPackSignatures) {
               MC_ERR_INVALID_ARGUMENT);
 }
 
+// No test key is ever compiled into the core, so a pack signed with one is not trusted.
+TEST(CApi, TrustsOnlyTheKeysCompiledIntoTheCore) {
+    ASSERT_GE(sodium_init(), 0);
+    std::array<uint8_t, crypto_sign_SEEDBYTES> seed{};
+    seed.fill(3);
+    std::array<uint8_t, crypto_sign_PUBLICKEYBYTES> public_key{};
+    std::array<uint8_t, crypto_sign_SECRETKEYBYTES> secret_key{};
+    crypto_sign_seed_keypair(public_key.data(), secret_key.data(), seed.data());
+
+    const std::string& pack = mc::test::test_pack_json();
+    std::array<uint8_t, crypto_sign_BYTES> signature{};
+    crypto_sign_detached(signature.data(), nullptr, bytes(pack), pack.size(), secret_key.data());
+
+    EXPECT_EQ(mc_pack_verify(bytes(pack), pack.size(), signature.data(), signature.size(), public_key.data(),
+                             public_key.size()),
+              MC_OK);
+    EXPECT_EQ(mc_pack_verify_trusted(bytes(pack), pack.size(), signature.data(), signature.size()), MC_ERR_BAD_PACK);
+    EXPECT_EQ(mc_pack_verify_trusted(bytes(pack), pack.size(), signature.data(), 0), MC_ERR_BAD_PACK);
+    EXPECT_EQ(mc_pack_verify_trusted(bytes(pack), pack.size(), nullptr, 0), MC_ERR_INVALID_ARGUMENT);
+    EXPECT_EQ(mc_pack_verify_trusted(nullptr, 1, signature.data(), signature.size()), MC_ERR_INVALID_ARGUMENT);
+}
+
 }  // namespace

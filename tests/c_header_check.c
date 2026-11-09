@@ -12,5 +12,8 @@ int mc_c_header_check(void) {
     mc_session* session = NULL;
     const mc_status status = mc_session_create(NULL, 0, &session, NULL, NULL);
     mc_session_destroy(session);
+    if (mc_pack_verify_trusted(NULL, 0, NULL, 0) != MC_ERR_INVALID_ARGUMENT) {
+        return -1;
+    }
     return (int)status;
 }

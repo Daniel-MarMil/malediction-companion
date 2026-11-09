@@ -9,7 +9,7 @@
 #   asan | tsan | release   build with that preset and run the tests
 #   coverage                tests with coverage; fails below 90 % (RNF-17)
 #   fuzz                    build the fuzzers and run each one for MC_FUZZ_SECONDS seconds (RNF-19)
-#   lint                    clang-format and clang-tidy
+#   lint                    clang-format and clang-tidy (core and mc_pack_tool)
 #   android                 library for arm64-v8a and x86_64, plus the 16 KB check (RNF-20)
 #   licenses                SPDX headers and licenses of the vcpkg dependencies (RNF-15)
 #   scancode                ScanCode Toolkit finds no GPL, LGPL or AGPL in our own code (ADR-08, RNF-15)
@@ -134,10 +134,10 @@ run_task() {
             ;;
         lint)
             setup
-            mapfile -t sources < <(find core tests fuzz examples -name '*.[ch]' -o -name '*.[ch]pp' | sort)
+            mapfile -t sources < <(find core tests fuzz examples tools/pack -name '*.[ch]' -o -name '*.[ch]pp' | sort)
             clang-format --dry-run --Werror "${sources[@]}"
             cmake --preset tidy -B "$build_root/tidy" "${cmake_args[@]}"
-            clang-tidy -p "$build_root/tidy" --quiet --warnings-as-errors='*' core/src/*.cpp
+            clang-tidy -p "$build_root/tidy" --quiet --warnings-as-errors='*' core/src/*.cpp tools/pack/*.cpp
             ;;
         android)
             setup

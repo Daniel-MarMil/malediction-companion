@@ -65,6 +65,14 @@ MC_API mc_status mc_pack_verify(const uint8_t* pack, size_t pack_len, const uint
                                 const uint8_t* public_key, size_t public_key_len) MC_NOEXCEPT;
 
 /**
+ * Checks the detached Ed25519 signature of a pack against the public keys compiled into the
+ * core (ADR-06): the release keys and, only in Debug builds with MC_TRUST_DEV_KEY, the
+ * development key. Returns MC_OK if one of them signed the pack and MC_ERR_BAD_PACK if none did.
+ */
+MC_API mc_status mc_pack_verify_trusted(const uint8_t* pack, size_t pack_len, const uint8_t* signature,
+                                        size_t signature_len) MC_NOEXCEPT;
+
+/**
  * Creates a session from a JSON rules pack.
  * If the pack is not valid it returns MC_ERR_BAD_PACK and, when out_error is not NULL,
  * stores in *out_error a JSON object with the reason, to be freed with mc_buffer_free.

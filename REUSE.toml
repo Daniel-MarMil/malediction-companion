@@ -10,6 +10,8 @@ path = [
   "vcpkg.json",
   "CMakePresets.json",
   "content/test/**",
+  "tests/data/**",
+  "keys/*.pub",
   "fuzz/corpus/**",
   "examples/commands/**",
   "NOTICE",

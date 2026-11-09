@@ -9,6 +9,7 @@
 #include "mc/core/deck_validator.hpp"
 #include "mc/core/rules_pack.hpp"
 #include "mc/core/signature.hpp"
+#include "mc/core/trusted_keys.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -144,6 +145,16 @@ mc_status mc_pack_verify(const uint8_t* pack, size_t pack_len, const uint8_t* si
     const bool valid = core::verify_signature(std::span<const std::uint8_t>(pack, pack_len),
                                               std::span<const std::uint8_t>(signature, signature_len),
                                               std::span<const std::uint8_t>(public_key, public_key_len));
+    return valid ? MC_OK : MC_ERR_BAD_PACK;
+}
+
+mc_status mc_pack_verify_trusted(const uint8_t* pack, size_t pack_len, const uint8_t* signature,
+                                 size_t signature_len) noexcept {
+    if ((pack == nullptr && pack_len != 0) || signature == nullptr) {
+        return MC_ERR_INVALID_ARGUMENT;
+    }
+    const bool valid = core::verify_trusted(std::span<const std::uint8_t>(pack, pack_len),
+                                            std::span<const std::uint8_t>(signature, signature_len));
     return valid ? MC_OK : MC_ERR_BAD_PACK;
 }
 

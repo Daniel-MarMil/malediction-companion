@@ -11,6 +11,10 @@
 CMakeUserPresets.json
 compile_commands.json
 
+# Secret keys of mc_pack_tool: they never go into the repository (ADR-06). keygen writes them
+# to ~/.config/seekers-companion/keys; this is only a safety net.
+*.mcsk
+
 # Official Malediction content: it never goes into the repository (ADR-12)
 /content/official/*
 !/content/official/README.md

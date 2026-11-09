@@ -9,6 +9,7 @@ add_library(mc_core
     src/deck_validator.cpp
     src/json_io.cpp
     src/signature.cpp
+    src/trusted_keys.cpp
     src/mc_api.cpp)
 add_library(mc::core ALIAS mc_core)
 
@@ -36,4 +37,5 @@ if(BUILD_SHARED_LIBS AND NOT APPLE AND NOT MSVC)
     set_property(TARGET mc_core APPEND PROPERTY LINK_DEPENDS "${_mc_symbol_map}")
 endif()
 
+mc_trust_dev_key(mc_core ${MC_TRUST_DEV_KEY} "${MC_DEV_PUBLIC_KEY_FILE}")
 mc_apply_compiler_options(mc_core)

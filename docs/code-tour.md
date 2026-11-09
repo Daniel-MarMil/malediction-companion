@@ -17,13 +17,13 @@ Android app, the iOS app and the server will all use (ADR-01).
 
 | Part | State |
 |---|---|
-| Rules packs (`mc-rules-pack` format 1) | Done: reading and checking a pack, indexing its cards, Ed25519 signature check |
+| Rules packs (`mc-rules-pack` format 1) | Done: reading and checking a pack, indexing its cards, Ed25519 signature check against a given key or the trusted keys |
 | Deck validation (RF-06) | Done: 17 rule codes, with the limits taken from the pack |
-| C API (ADR-11) | Done: six functions and two commands, `pack_info` and `validate_deck` |
+| C API (ADR-11) | Done: seven functions and two commands, `pack_info` and `validate_deck` |
 | `mc_cli` | Done: a command-line client to try the C API by hand |
 | Tests, sanitizers, coverage, fuzzing, license checks | Done, as local tasks in `tools/ci/ci.sh`; there is no remote CI |
 | Android library (`libmc_core.so`, 16 KB pages) | Set up (`tools/ci/ci.sh android`); no app uses it yet |
-| Tool to sign packs and key management (ADR-06) | Not started |
+| Pack keys (ADR-06) | Done: `mc_pack_tool` (keygen, sign, verify) and the trusted keys of the core; the development key is created by hand, and there are no release keys yet |
 | Android app, account service, server, iOS app | Not started (phases 1 to 5) |
 
 The official Malediction content is not part of the code: the tests use made-up cards
@@ -38,22 +38,26 @@ core/include/mc/core/rules_pack.hpp     RulesPack, PackInfo, DeckRules and PackE
 core/include/mc/core/deck.hpp           Deck and DeckEntry
 core/include/mc/core/deck_validator.hpp Rule codes, ValidationIssue and validate_deck()
 core/include/mc/core/signature.hpp      verify_signature() (Ed25519)
+core/include/mc/core/trusted_keys.hpp   trusted_keys(), verify_with_any_key() and verify_trusted()
 core/src/mc_api.cpp                     The C functions: limits, command routing, error replies
 core/src/rules_pack.cpp                 RulesPack::parse(): reads and checks a pack
 core/src/deck_validator.cpp             The Checker class, which applies the deck rules
 core/src/json_io.hpp, json_io.cpp       JSON to domain types and back (internal)
 core/src/card.cpp                       Text codes of card types and ranks
 core/src/signature.cpp                  The libsodium call
+core/src/trusted_keys.cpp               The public keys compiled into the core
+cmake/McTrustedKeys.cmake               MC_TRUST_DEV_KEY: the development key, only in Debug
 core/mc_core.map                        The only symbols the shared library exports
 tests/                                  GoogleTest and RapidCheck tests, C11 header check
 examples/mc_cli.c                       Command-line client; examples/commands/ has sample commands
 fuzz/                                   libFuzzer targets and their seed corpus
+tools/pack/                             mc_pack_tool: keygen, sign and verify (development only)
 content/test/rules-pack.test.json       The made-up pack used by tests, fuzzers and mc_cli
 ```
 
 ## How a command flows through the core
 
-The apps (and `mc_cli`) only use the six functions in `mc_api.h`. Data crosses the boundary as
+The apps (and `mc_cli`) only use the seven functions in `mc_api.h`. Data crosses the boundary as
 UTF-8 JSON bytes, and no C++ exception ever crosses it.
 
 ```mermaid
@@ -63,7 +67,7 @@ sequenceDiagram
     participant Pack as rules_pack.cpp
     participant IO as json_io.cpp
     participant Val as deck_validator.cpp
-    App->>API: mc_pack_verify(pack, signature, key)
+    App->>API: mc_pack_verify_trusted(pack, signature)
     App->>API: mc_session_create(pack)
     API->>Pack: RulesPack::parse(text)
     Pack-->>API: RulesPack, or PackError
@@ -79,9 +83,12 @@ sequenceDiagram
 
 ### 1. Loading a rules pack
 
-`mc_pack_verify` checks the detached Ed25519 signature of the pack bytes with libsodium
-(`signature.cpp`). The core does not call it on its own: the app calls it before creating a
-session.
+`mc_pack_verify_trusted` checks the detached Ed25519 signature of the pack bytes with libsodium
+(`signature.cpp`) against each public key compiled into the core (`trusted_keys.cpp`): the
+release keys, none yet, and, only in Debug builds with `MC_TRUST_DEV_KEY`, the development key
+from `keys/dev.pub`. `mc_pack_verify` does the same with a key given by the caller. The core does
+not call either on its own: the app calls one before creating a session. `mc_pack_tool`
+(`tools/pack/`) creates the keys and the signatures; see the README.
 
 `mc_session_create` rejects packs larger than 16 MiB and passes the bytes to
 `RulesPack::parse` (`rules_pack.cpp`), which:
@@ -154,6 +161,10 @@ refers to when there is one, and a `detail` in English for debugging.
 | `tests/deck_validator_test.cpp` | Each rule on its own: Seeker, Legacy, terrain, sizes, side deck, copy limits (also across lines and with the side deck), types, ranks, sigils, unaligned cards, cards that should not be in the deck and very large copy counts |
 | `tests/deck_properties_test.cpp` | Properties checked by RapidCheck on hundreds of random decks: legal cards within their limits only fail on size, order and split lines do not change the result, going over a limit is always detected, cards that should not be in the deck always count towards the size and mark it, without a valid Seeker that is the only issue, and validation is deterministic |
 | `tests/signature_test.cpp` | Ed25519 with the RFC 8032 test vector; a modified pack, a modified signature, another key and wrong sizes are rejected |
+| `tests/trusted_keys_test.cpp` | Several keys with the signer in any position, no matching key, altered packs and signatures, and no test key among the trusted ones |
+| `tests/trusted_keys_build_test.cpp` | Built twice with a test development key: it is trusted with `MC_TRUST_DEV_KEY` and rejected without it |
+| `tests/CMakeLists.txt` (`cmake.dev_key_*`) | CMake refuses the development key outside Debug and leaves it off by default in Release |
+| `tests/pack_tool_test.cpp` | `mc_pack_tool` with fixed seeds and the lowest Argon2id limits: keygen, sign and verify end to end, wrong password, altered key file, pack or signature, limits stored in the file, no overwriting and the command line |
 | `tests/c_api_test.cpp` | The C API as the apps will use it: sessions, null-terminated buffers, every error code, size limits, argument checks and signatures |
 | `tests/c_header_check.c` | `mc_api.h` compiles as C11 and links from C |
 | `examples/CMakeLists.txt` | `mc_cli` on each example command |
@@ -165,7 +176,8 @@ AddressSanitizer and UBSan, ThreadSanitizer and Release, at least 90 % line cove
 integration.
 
 Not covered yet: real Malediction cards (the official pack stays private and is tested only on
-the development machine), signing packs (there is no signing tool yet) and, naturally, the apps.
+the development machine), `mc_pack_tool keygen` with the real Argon2id limits and the terminal
+password prompt (they need 1 GiB and a person at the keyboard) and, naturally, the apps.
 
 ## Try it yourself
 
@@ -263,4 +275,5 @@ the private pack and the server's account service (ADR-05). In terms of code:
 - An Android Studio project in Kotlin with Jetpack Compose that builds `libmc_core.so` through
   Gradle and calls the C API through a thin JNI layer (ADR-02 and ADR-11).
 - The account service on the server (ADR-03 and ADR-05).
-- Still open from phase 0: the tool to sign packs and its keys (ADR-06).
+- Still open from phase 0: creating the development key with `mc_pack_tool keygen dev` and
+  copying `dev.pub` to `keys/` (ADR-06).

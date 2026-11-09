@@ -16,10 +16,12 @@ adapted to a card game.
 
 Phase 0: the shared C++20 core.
 
-- Versioned rules packs (`mc-rules-pack` format 1) with a detached Ed25519 signature (ADR-06).
+- Versioned rules packs (`mc-rules-pack` format 1) with a detached Ed25519 signature, checked
+  against a given key or against the keys compiled into the core (ADR-06).
 - Deck validation (RF-06): Seeker, Legacy and terrain; 30 to 50 cards; sigils; copies per rank;
   a side deck of 7. The limits come from the pack, not from the code.
 - C API for the apps (ADR-11), and `mc_cli`, a command-line client to try it by hand.
+- `mc_pack_tool`, the development tool that creates the pack keys and signs packs.
 - Tests with GoogleTest and RapidCheck, sanitizers, coverage and fuzzing with libFuzzer.
 
 The Android app (Kotlin with Jetpack Compose) comes next, and then the iOS app (Swift with
@@ -55,6 +57,8 @@ content/test/         Made-up rules pack for the tests
 content/official/     Private official content (ignored by git)
 docs/                 Architecture decisions (adr/), code tour and local environment guide
 tools/ci/             Local checks (tools/ci/ci.sh) and the scripts they use
+tools/pack/           mc_pack_tool: pack keys and signatures (development only)
+keys/                 Public development key, dev.pub, once it is created (ADR-06)
 tools/dev/            Local environment setup
 ```
 
@@ -116,9 +120,15 @@ Play requires for apps that target Android 15 (API 35) or later on 64-bit device
 ## C API
 
 The apps talk to the core through JSON commands. A session is used from a single thread, and
-every returned buffer is freed with `mc_buffer_free`:
+every returned buffer is freed with `mc_buffer_free`. Before creating a session, the app checks
+the pack's detached signature with `mc_pack_verify_trusted`, against the keys compiled into the
+core:
 
 ```c
+if (mc_pack_verify_trusted(pack, pack_len, signature, signature_len) != MC_OK) {
+    return; /* not signed by a trusted key */
+}
+
 mc_session* session = NULL;
 uint8_t* error = NULL;
 size_t error_len = 0;
@@ -153,11 +163,40 @@ not be in the deck still count towards its size: each one gets its own issue, an
 `deck_has_invalid_cards`. The `detail` text is in English and meant for debugging, not for
 players.
 
+| Function | What it does |
+|---|---|
+| `mc_version` | Core version |
+| `mc_pack_verify` | Checks a pack's signature against a given public key |
+| `mc_pack_verify_trusted` | Checks a pack's signature against the keys compiled into the core |
+| `mc_session_create`, `mc_session_destroy` | Open and close a session with a pack |
+| `mc_session_dispatch` | Runs a JSON command |
+| `mc_buffer_free` | Frees a buffer returned by the core |
+
 `mc_cli` runs these commands from the command line, for example:
 
 ```sh
 build/dev/examples/mc_cli content/test/rules-pack.test.json examples/commands/invalid-deck.json
 ```
+
+## Pack keys
+
+Packs are signed with Ed25519 keys that `mc_pack_tool` creates and uses (ADR-06). It is built
+with the core on Linux and WSL, at `$MC_BUILD_ROOT/<preset>/tools/pack/mc_pack_tool`:
+
+```sh
+mc_pack_tool keygen dev                       # ~/.config/seekers-companion/keys/dev.mcsk and dev.pub
+mc_pack_tool sign ~/.config/seekers-companion/keys/dev.mcsk pack.json   # writes pack.json.sig
+mc_pack_tool verify ~/.config/seekers-companion/keys/dev.pub pack.json
+```
+
+Passwords are read only from the terminal. The secret key is encrypted with a key derived from
+the password with Argon2id (1 GiB of memory, a few seconds), never leaves your machine and never
+goes into the repository; keep an offline backup of it and its password.
+
+The core trusts only the public keys compiled into it. Release builds trust only release keys,
+which do not exist yet. Debug builds also trust the development key in `keys/dev.pub`
+(`MC_TRUST_DEV_KEY`, on by default only in Debug and refused in other build types): after
+`keygen dev`, copy `dev.pub` there.
 
 ## Checks
 

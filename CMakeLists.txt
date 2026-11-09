@@ -17,10 +17,12 @@ option(MC_BUILD_TESTS "Build the core tests" ON)
 option(MC_BUILD_FUZZERS "Build the libFuzzer fuzzing targets (Clang only)" OFF)
 option(MC_WARNINGS_AS_ERRORS "Treat compiler warnings as errors (RNF-19)" ON)
 option(MC_COVERAGE "Instrument the code to measure coverage with gcov" OFF)
+option(MC_BUILD_TOOLS "Build the development tools, such as mc_pack_tool (not on Android or Windows)" ON)
 set(MC_SANITIZERS "" CACHE STRING "Comma-separated sanitizers, for example: address,undefined")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(McCompilerOptions)
+include(McTrustedKeys)
 
 if(MC_BUILD_FUZZERS)
     if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -35,6 +37,12 @@ find_package(nlohmann_json 3.11 CONFIG REQUIRED)
 include(McFindSodium)
 
 add_subdirectory(core)
+
+# Development tools: they run only on the development machine, never ship in an app and
+# are not built for Android (ADR-06). mc_pack_tool reads passwords from a POSIX terminal.
+if(MC_BUILD_TOOLS AND NOT ANDROID AND NOT WIN32 AND NOT CMAKE_CROSSCOMPILING)
+    add_subdirectory(tools/pack)
+endif()
 
 # Tests run on the development machine, not in Android builds. mc_cli, the command-line
 # client in examples/, is built and tested with them.

@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
 #
-# Static analysis of the core. Usage: clang-tidy -p build/<preset> core/src/*.cpp
+# Static analysis of the core and mc_pack_tool. Usage: clang-tidy -p build/<preset> core/src/*.cpp tools/pack/*.cpp
 # Justified exceptions:
 #  - reinterpret_cast, new[] and delete[] are needed at the C boundary (ADR-11).
 #  - Magic numbers and short names are left to code review.
@@ -31,7 +31,7 @@ Checks: >
   readability-*,
   -readability-identifier-length,
   -readability-magic-numbers
-HeaderFilterRegex: '.*/core/(include|src)/.*'
+HeaderFilterRegex: '.*/(core/(include|src)|tools/pack)/.*'
 FormatStyle: file
 CheckOptions:
   - key: readability-function-cognitive-complexity.Threshold
