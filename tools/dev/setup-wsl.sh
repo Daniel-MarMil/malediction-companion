@@ -2,8 +2,8 @@
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
 #
-# Prepares Ubuntu 26.04 (on WSL 2 or native) to build and test the core the same way as
-# continuous integration. Run it once, as a normal user (it asks for sudo for apt):
+# Prepares Ubuntu 26.04 (on WSL 2 or native) to build and test the core with tools/ci/ci.sh.
+# Run it once, as a normal user (it asks for sudo for apt):
 #   tools/dev/setup-wsl.sh
 #
 # It leaves vcpkg and the NDK in ~/.local/share, the builds in ~/.cache/seekers-companion
@@ -19,14 +19,10 @@ vcpkg_root="$data_dir/vcpkg"
 ndk_dir="$data_dir/android-ndk"
 build_root="$cache_dir/seekers-companion/build"
 
-# pipx and Woodpecker CLI go to ~/.local/bin. With that folder already on the PATH, pipx does
+# pipx installs gcovr in ~/.local/bin. With that folder already on the PATH, pipx does
 # not warn that it is missing and the tools work for the rest of the script.
 mkdir -p "$bin_dir"
 export PATH="$bin_dir:$PATH"
-
-# Woodpecker CLI to validate the workflows in .woodpecker/ (version and checksum of the official release).
-woodpecker_version="3.20.1"
-woodpecker_sha256="5b74ff1808af35b57bd5c2b528b7fdff24f5f69ad327715c1797f764da79dc13"
 
 step() {
     printf '\n== %s\n' "$1"
@@ -37,7 +33,7 @@ if [ "$(id -u)" -eq 0 ]; then
     exit 1
 fi
 if ! grep -q 'VERSION_ID="26.04"' /etc/os-release 2> /dev/null; then
-    echo "Warning: continuous integration uses Ubuntu 26.04 and this system is different; results may differ." >&2
+    echo "Warning: the reference environment is Ubuntu 26.04 and this system is different; results may differ." >&2
 fi
 
 step "System packages"
@@ -56,16 +52,6 @@ step "vcpkg at $vcpkg_root"
 
 step "NDK r30 at $ndk_dir"
 ANDROID_NDK_HOME="" MC_NDK_DIR="$ndk_dir" "$root/tools/ci/ci.sh" ndk
-
-step "Woodpecker CLI $woodpecker_version"
-mkdir -p "$bin_dir"
-tmp="$(mktemp -d)"
-curl -fsSLo "$tmp/woodpecker-cli.tar.gz" \
-    "https://github.com/woodpecker-ci/woodpecker/releases/download/v$woodpecker_version/woodpecker-cli_linux_amd64.tar.gz"
-echo "$woodpecker_sha256  $tmp/woodpecker-cli.tar.gz" | sha256sum -c -
-tar -xzf "$tmp/woodpecker-cli.tar.gz" -C "$tmp"
-install -m 0755 "$tmp/woodpecker-cli" "$bin_dir/woodpecker-cli"
-rm -rf "$tmp"
 
 step "Variables in ~/.bashrc"
 mkdir -p "$build_root"
@@ -92,7 +78,6 @@ step "Done"
 cmake --version | head -1
 clang --version | head -1
 g++ --version | head -1
-"$bin_dir/woodpecker-cli" --version 2> /dev/null || true
 cat << EOF
 
 Open a new terminal (or run: source ~/.bashrc) and try:

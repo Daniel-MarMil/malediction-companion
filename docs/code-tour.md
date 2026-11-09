@@ -21,9 +21,8 @@ Android app, the iOS app and the server will all use (ADR-01).
 | Deck validation (RF-06) | Done: 17 rule codes, with the limits taken from the pack |
 | C API (ADR-11) | Done: six functions and two commands, `pack_info` and `validate_deck` |
 | `mc_cli` | Done: a command-line client to try the C API by hand |
-| Tests, sanitizers, coverage, fuzzing | Done, as local tasks and as CI workflows |
+| Tests, sanitizers, coverage, fuzzing, license checks | Done, as local tasks in `tools/ci/ci.sh`; there is no remote CI |
 | Android library (`libmc_core.so`, 16 KB pages) | Set up (`tools/ci/ci.sh android`); no app uses it yet |
-| Woodpecker CI | Workflows written; pin the image by its digest before enabling them on Codeberg |
 | Tool to sign packs and key management (ADR-06) | Not started |
 | Android app, account service, server, iOS app | Not started (phases 1 to 5) |
 
@@ -160,9 +159,10 @@ refers to when there is one, and a `detail` in English for debugging.
 | `examples/CMakeLists.txt` | `mc_cli` on each example command |
 | `fuzz/` | libFuzzer with random packs and random commands: the core must never crash and must always answer with JSON |
 
-On every push, continuous integration runs the tests with AddressSanitizer and UBSan, checks
-formatting and clang-tidy, and requires at least 90 % line coverage of `core/src` (RNF-17). Once
-a week it also runs ThreadSanitizer, a Release build, the fuzzers and the Android build.
+Before every commit, `tools/ci/ci.sh all` runs locally: formatting and clang-tidy, the tests with
+AddressSanitizer and UBSan, ThreadSanitizer and Release, at least 90 % line coverage of `core/src`
+(RNF-17), the fuzzers, the Android build and the license checks. There is no remote continuous
+integration.
 
 Not covered yet: real Malediction cards (the official pack stays private and is tested only on
 the development machine), signing packs (there is no signing tool yet) and, naturally, the apps.
@@ -263,5 +263,4 @@ the private pack and the server's account service (ADR-05). In terms of code:
 - An Android Studio project in Kotlin with Jetpack Compose that builds `libmc_core.so` through
   Gradle and calls the C API through a thin JNI layer (ADR-02 and ADR-11).
 - The account service on the server (ADR-03 and ADR-05).
-- Still open from phase 0: the tool to sign packs and its keys (ADR-06), and enabling
-  continuous integration on Codeberg.
+- Still open from phase 0: the tool to sign packs and its keys (ADR-06).

@@ -2,9 +2,8 @@
 # SPDX-FileCopyrightText: 2026 Daniel Martín Millet
 # SPDX-License-Identifier: Apache-2.0
 #
-# Core tasks for continuous integration and for the local environment (WSL or Linux).
-# In CI they run as root inside ubuntu:26.04 and install whatever is missing; locally they
-# use what tools/dev/setup-wsl.sh installed.
+# Core checks, run locally in WSL or Linux with the tools that tools/dev/setup-wsl.sh installs.
+# There is no remote continuous integration: run "all" before proposing a commit.
 #
 # Usage: tools/ci/ci.sh TASK [TASK...]
 #   asan | tsan | release   build with that preset and run the tests
@@ -13,6 +12,7 @@
 #   lint                    clang-format and clang-tidy
 #   android                 library for arm64-v8a and x86_64, plus the 16 KB check (RNF-20)
 #   licenses                SPDX headers and licenses of the vcpkg dependencies (RNF-15)
+#   scancode                ScanCode Toolkit finds no GPL, LGPL or AGPL in our own code (ADR-08, RNF-15)
 #   all                     all of the above, in that order
 #   ndk                     only downloads NDK r30 if it is missing (used by tools/dev/setup-wsl.sh)
 #
@@ -45,17 +45,7 @@ ndk_version="r30"
 ndk_sha1="5107f898313790e449e87eee2183d9a20602dee9"
 
 usage() {
-    sed -n '9,24p' "${BASH_SOURCE[0]}"
-}
-
-install_packages() {
-    if [ "$(id -u)" -ne 0 ]; then
-        return  # Locally, tools/dev/setup-wsl.sh installs the tools.
-    fi
-    apt-get update -qq
-    apt-get install -y -qq --no-install-recommends \
-        build-essential clang libclang-rt-dev clang-tidy clang-format cmake ninja-build git curl \
-        ca-certificates zip unzip tar pkg-config python3 python3-pip autoconf autoconf-archive automake libtool
+    sed -n '8,24p' "${BASH_SOURCE[0]}"
 }
 
 setup_done=false
@@ -63,7 +53,6 @@ setup() {
     if [ "$setup_done" = true ]; then
         return
     fi
-    install_packages
     mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
     tools/ci/bootstrap-vcpkg.sh "$VCPKG_ROOT"
     setup_done=true
@@ -84,11 +73,17 @@ ensure_gcovr() {
     if command -v gcovr > /dev/null; then
         return
     fi
-    if [ "$(id -u)" -eq 0 ]; then
-        pip install --quiet --break-system-packages gcovr==8.8
-    else
-        python3 -m pip install --quiet --user --break-system-packages gcovr==8.8
-        export PATH="$HOME/.local/bin:$PATH"
+    python3 -m pip install --quiet --user --break-system-packages gcovr==8.8
+    export PATH="$HOME/.local/bin:$PATH"
+}
+
+# ScanCode 32.5.0 does not start with pluggy 1.7 (checked on 2026-11-07); it does with 1.6.
+# It lives in its own virtual environment under the build folder.
+ensure_scancode() {
+    scancode_venv="$build_root/scancode-venv"
+    if [ ! -x "$scancode_venv/bin/scancode" ]; then
+        python3 -m venv "$scancode_venv"
+        "$scancode_venv/bin/pip" install --quiet scancode-toolkit==32.5.0 "pluggy<1.7"
     fi
 }
 
@@ -169,13 +164,21 @@ run_task() {
                 python3 tools/ci/check_licenses.py --vcpkg-installed "$dir"
             done
             ;;
+        scancode)
+            ensure_scancode
+            "$scancode_venv/bin/scancode" --license --processes "$(nproc)" --quiet \
+                --ignore "build/*" --ignore ".git/*" --ignore ".vcpkg/*" --ignore ".vcpkg-cache/*" \
+                --ignore ".ndk/*" --ignore "content/official/*" \
+                --json-pp "$build_root/scancode.json" .
+            python3 tools/ci/check_licenses.py --scancode "$build_root/scancode.json"
+            ;;
         ndk)
             ensure_ndk
             echo "NDK at $ANDROID_NDK_HOME"
             ;;
         all)
             local task
-            for task in lint asan tsan release coverage fuzz android licenses; do
+            for task in lint asan tsan release coverage fuzz android licenses scancode; do
                 run_task "$task"
             done
             ;;

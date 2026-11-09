@@ -3,7 +3,7 @@
 #
 # mc_cli, a command-line client to try the core by hand through its C API
 # (docs/code-tour.md). The tests below run it on the example commands, so it is also
-# built and checked with sanitizers in continuous integration.
+# built and checked with sanitizers by tools/ci/ci.sh.
 
 add_executable(mc_cli mc_cli.c)
 target_link_libraries(mc_cli PRIVATE mc::core)

@@ -28,8 +28,8 @@ Run everything from the repository root in WSL. Builds go to `$MC_BUILD_ROOT`
   Run it after every change.
 - `tools/ci/ci.sh lint`: clang-format and clang-tidy. Run it before proposing a commit.
 - `tools/ci/ci.sh coverage`: fails below 90 % line coverage of `core/src`.
-- `tools/ci/ci.sh all`: everything continuous integration runs, including ThreadSanitizer,
-  Release, fuzzing and the Android library.
+- `tools/ci/ci.sh all`: every check (there is no remote continuous integration), including ThreadSanitizer,
+  Release, fuzzing, the Android library and ScanCode.
 - A single test: `ctest --test-dir "$MC_BUILD_ROOT/asan" -R <name> --output-on-failure`.
 - The C API by hand:
   `"$MC_BUILD_ROOT/asan/examples/mc_cli" content/test/rules-pack.test.json examples/commands/invalid-deck.json`.

@@ -54,9 +54,8 @@ fuzz/                 libFuzzer targets and seed corpus
 content/test/         Made-up rules pack for the tests
 content/official/     Private official content (ignored by git)
 docs/                 Architecture decisions (adr/), code tour and local environment guide
-tools/ci/             Continuous integration tasks, also for local use
+tools/ci/             Local checks (tools/ci/ci.sh) and the scripts they use
 tools/dev/            Local environment setup
-.woodpecker/          Woodpecker CI workflows
 ```
 
 ## Building
@@ -77,15 +76,15 @@ ctest --preset dev
 
 On Windows, open the folder with Visual Studio 2022 (17.5 or later) or 2026 with the
 `CMakePresets.json` integration enabled, or use the developer command prompt. The `asan`, `tsan`,
-`coverage` and `fuzz` presets are meant for Linux or WSL 2; `tools/ci/ci.sh` runs them the same
-way continuous integration does:
+`coverage` and `fuzz` presets are meant for Linux or WSL 2; `tools/ci/ci.sh` runs them with the
+project's checks:
 
 ```sh
 tools/ci/ci.sh asan        # AddressSanitizer and UBSan
 tools/ci/ci.sh tsan        # ThreadSanitizer
 tools/ci/ci.sh coverage    # coverage; fails below 90 %
 tools/ci/ci.sh fuzz        # Clang and libFuzzer
-tools/ci/ci.sh all         # everything continuous integration does
+tools/ci/ci.sh all         # every check, ScanCode included
 ```
 
 Outside Windows, vcpkg builds libsodium with autotools: install `autoconf`, `autoconf-archive`,
@@ -102,7 +101,7 @@ cmake --preset system && cmake --build --preset system && ctest --preset system
 
 ### Android
 
-With NDK r28 or later (continuous integration uses r30, the current LTS release) and the
+With NDK r28 or later (`tools/ci/ci.sh` uses r30, the current LTS release) and the
 `ANDROID_NDK_HOME` variable:
 
 ```sh
@@ -160,19 +159,20 @@ players.
 build/dev/examples/mc_cli content/test/rules-pack.test.json examples/commands/invalid-deck.json
 ```
 
-## Continuous integration
+## Checks
 
-The workflows in [`.woodpecker/`](.woodpecker) call `tools/ci/ci.sh`, which can also be run
-locally. To use no more of Codeberg's resources than needed, the heavy work runs separately:
+There is no remote continuous integration: the checks run locally with `tools/ci/ci.sh`, on
+Ubuntu 26.04 (GCC 15, Clang 21 and CMake 4.2), and `tools/ci/ci.sh all` must pass before a commit.
 
-| Workflow | When | What |
-|---|---|---|
-| `core.yaml` | On every push and pull request, unless only documentation changes | clang-format and clang-tidy, ASan and UBSan, minimum coverage of 90 % (RNF-17) and dependency licenses |
-| `extended.yaml` | Once a week or manually | ThreadSanitizer, Release, fuzzing and the Android library with the 16 KB check (RNF-19 and RNF-20) |
-| `licenses.yaml` | SPDX headers on every push; ScanCode once a week or manually | Licenses of the project's own code (RNF-15) |
-
-`core.yaml` and `extended.yaml` use the `ubuntu:26.04` image (GCC 15, Clang 21 and CMake 4.2). For
-the weekly run, create a scheduled task (Cron) named `weekly` in Woodpecker.
+| Task | What |
+|---|---|
+| `lint` | clang-format and clang-tidy |
+| `asan`, `tsan`, `release` | The tests with AddressSanitizer and UBSan, with ThreadSanitizer, and in Release |
+| `coverage` | Minimum line coverage of 90 % of `core/src` (RNF-17) |
+| `fuzz` | The libFuzzer targets (RNF-19) |
+| `android` | The Android library with the 16 KB check (RNF-20) |
+| `licenses` | SPDX headers and the licenses of the vcpkg dependencies (ADR-08 and RNF-15) |
+| `scancode` | ScanCode Toolkit finds no GPL, LGPL or AGPL in the project's own code (ADR-08 and RNF-15) |
 
 ## Contributing
 

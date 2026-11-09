@@ -24,7 +24,6 @@ crash-*
 leak-*
 timeout-*
 oom-*
-scancode.json
 
 # Editors and operating system
 .idea/

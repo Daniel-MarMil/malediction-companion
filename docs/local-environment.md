@@ -5,15 +5,15 @@ SPDX-License-Identifier: Apache-2.0
 
 # Local development environment
 
-With this environment you can run on your own computer everything that continuous integration
-does, and start developing the Android app. It is meant for Windows with WSL 2.
+With this environment you can run every check of the project (`tools/ci/ci.sh`; there is no
+remote continuous integration) and start developing the Android app. It is meant for Windows with WSL 2.
 
 ## How the work is split
 
 | Where | What |
 |---|---|
 | Windows | The repository, Git, Android Studio with the emulator and, optionally, Visual Studio to build the core with MSVC. |
-| WSL 2 with Ubuntu 26.04 | The core: builds, tests, sanitizers, coverage, fuzzing, analysis and the Android library. It is the same Ubuntu release that continuous integration uses. |
+| WSL 2 with Ubuntu 26.04 | The core: builds, tests, sanitizers, coverage, fuzzing, analysis and the Android library. It is the reference Ubuntu release for the checks. |
 
 There is a single copy of the code, the one on Windows. Ubuntu works on it through `/mnt/c`, but
 builds in `~/.cache/seekers-companion/build`: it is faster and avoids the path with a space
@@ -32,8 +32,8 @@ check it, `wsl -l -v` must show `Ubuntu-26.04` with version 2. If the installati
 WSL with `wsl --update` and try again.
 
 Ubuntu 24.04 also works: the core builds and passes the tests with GCC 13 and Clang 18.
-Continuous integration uses the 26.04 versions (GCC 15 and Clang 21), so clang-tidy may find
-things there that it does not see on 24.04.
+The reference versions are those of 26.04 (GCC 15 and Clang 21), so clang-tidy may find things
+there that it does not see on 24.04.
 
 ## 2. Set up Ubuntu
 
@@ -50,8 +50,7 @@ The script runs once and can be run again to update. It installs:
 - the build and analysis packages (GCC, Clang, CMake, Ninja, clang-tidy, clangd, gdb, Valgrind, cppcheck);
 - gcovr, for coverage;
 - vcpkg, at the version pinned in `vcpkg.json`;
-- Android NDK r30;
-- Woodpecker CLI, to validate the workflows in `.woodpecker/`.
+- Android NDK r30.
 
 It also leaves the variables it needs in `~/.bashrc`.
 
@@ -64,7 +63,7 @@ tools/ci/ci.sh asan            # tests with AddressSanitizer and UBSan
 tools/ci/ci.sh coverage        # coverage; fails below 90 %
 tools/ci/ci.sh lint            # clang-format and clang-tidy
 tools/ci/ci.sh android         # Android library and the 16 KB check
-tools/ci/ci.sh all             # everything continuous integration does
+tools/ci/ci.sh all             # every check, ScanCode included; run it before a commit
 ```
 
 The first time, vcpkg builds the dependencies and takes a few minutes; after that they are
@@ -75,12 +74,6 @@ To open the coverage report in the Windows browser:
 
 ```sh
 explorer.exe "$(wslpath -w "$MC_BUILD_ROOT/coverage/html/index.html")"
-```
-
-To validate the continuous integration workflows before pushing them:
-
-```sh
-woodpecker-cli lint --strict .woodpecker/core.yaml
 ```
 
 ### If vcpkg cannot download the dependencies
