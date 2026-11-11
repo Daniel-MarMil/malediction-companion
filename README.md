@@ -20,6 +20,8 @@ Phase 0: the shared C++20 core.
   against a given key or against the keys compiled into the core (ADR-06).
 - Deck validation (RF-06): Seeker, Legacy and terrain; 30 to 50 cards; sigils; copies per rank;
   a side deck of 7. The limits come from the pack, not from the code.
+- Deck lists as text (RF-09 and RF-10): import the list that malediction.gg exports, with an
+  error for each line it does not understand, and export a deck in the same format.
 - C API for the apps (ADR-11), and `mc_cli`, a command-line client to try it by hand.
 - `mc_pack_tool`, the development tool that creates the pack keys and signs packs.
 - Tests with GoogleTest and RapidCheck, sanitizers, coverage and fuzzing with libFuzzer.
@@ -48,7 +50,7 @@ The tests use a pack of made-up cards: [`content/test/rules-pack.test.json`](con
 ```text
 core/                 C++20 core (no user interface, no I/O)
   include/mc/mc_api.h   C API, the only boundary with the apps
-  include/mc/core/      Domain types: cards, rules pack, deck, validation
+  include/mc/core/      Domain types: cards, rules pack, deck, validation, deck lists
   src/                  Implementation
 tests/                Tests (GoogleTest, RapidCheck) and the C11 header check
 examples/             mc_cli, a command-line client for the C API, and example commands
@@ -151,6 +153,8 @@ mc_session_destroy(session);
 |---|---|
 | `{"cmd":"pack_info"}` | `{"ok":true,"pack":{"id","version","date","origin","license","cards"}}` |
 | `{"cmd":"validate_deck","deck":{...}}` | `{"ok":true,"valid":bool,"issues":[{"rule","card","detail"}]}` |
+| `{"cmd":"import_deck","text":"..."}` | `{"ok":true,"deck":{...},"errors":[{"line","error","detail"}]}` |
+| `{"cmd":"export_deck","deck":{...}}` | `{"ok":true,"text":"..."}` |
 
 The deck has the shape `{"seeker","legacy","terrain","main":[{"card","copies"}],"side":[...]}`.
 Each issue carries a stable code that the app translates: `seeker_missing`,
@@ -162,6 +166,21 @@ deck is not checked, so the only issue is `seeker_missing` or `seeker_invalid`. 
 not be in the deck still count towards its size: each one gets its own issue, and the deck also gets
 `deck_has_invalid_cards`. The `detail` text is in English and meant for debugging, not for
 players.
+
+`import_deck` reads a deck list in the format that malediction.gg exports (the Seeker, the Legacy
+and the terrain with `1x`, then `Main Deck` and `Side Deck` with one `Nx Name` per line) and
+returns the deck with the card ids of the pack, in the shape that `validate_deck` takes. It does
+not check the deck rules; that is still the job of `validate_deck`. Each line it cannot use gets
+an error with its number, counting from 1, and a stable code: `unrecognized_line`,
+`unknown_section`, `bad_copies`, `unknown_card`, `ambiguous_card`, `wrong_section` or
+`too_many_lines`. A section title other than `Main Deck` or `Side Deck` gets `unknown_section`,
+and so does every line under it up to the next known title: none of those cards is imported, so
+that no card ends up in the wrong section. The rest of the list is still read, and after 100
+errors the reply stops listing them and adds `"errors_truncated":true`.
+`export_deck` writes a deck in the same format with the names of the pack, so that importing the
+text gives the same deck. A deck that cannot be written that way gets `MC_ERR_BAD_COMMAND` with
+`unknown_card`, `wrong_section`, `bad_copies` or `not_exportable`. The code tour has the details
+of the format.
 
 | Function | What it does |
 |---|---|

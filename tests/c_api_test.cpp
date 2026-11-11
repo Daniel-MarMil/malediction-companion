@@ -142,6 +142,71 @@ TEST(CApi, ValidatesADeck) {
     EXPECT_FALSE(reply["issues"][0].contains("card"));
 }
 
+TEST(CApi, ImportsAndExportsDeckLists) {
+    const Session session;
+    ASSERT_EQ(session.status(), MC_OK);
+
+    // The exported list of a valid deck imports back to the same deck, which validate_deck accepts.
+    json export_command = json::object();
+    export_command["cmd"] = "export_deck";
+    export_command["deck"] = deck_json(mc::test::valid_ash_deck());
+    Buffer exported;
+    ASSERT_EQ(session.dispatch(export_command.dump(), exported), MC_OK);
+    const json list = exported.parsed();
+    ASSERT_TRUE(list.at("ok").get<bool>());
+    const std::string text = list.at("text").get<std::string>();
+    EXPECT_EQ(text.rfind("1x Kindra, the Ash Test Seeker\n", 0), 0U);
+
+    json import_command = json::object();
+    import_command["cmd"] = "import_deck";
+    import_command["text"] = text;
+    Buffer imported;
+    ASSERT_EQ(session.dispatch(import_command.dump(), imported), MC_OK);
+    const json reply = imported.parsed();
+    EXPECT_TRUE(reply.at("ok").get<bool>());
+    EXPECT_TRUE(reply.at("errors").empty());
+    EXPECT_FALSE(reply.contains("errors_truncated"));
+    EXPECT_EQ(reply.at("deck").at("seeker"), "T-SEEK-ASH");
+    EXPECT_EQ(reply.at("deck").at("side"), json::array());
+
+    Buffer validated;
+    ASSERT_EQ(session.dispatch(validate_command(reply.at("deck")), validated), MC_OK);
+    EXPECT_TRUE(validated.parsed().at("valid").get<bool>());
+}
+
+TEST(CApi, ImportReportsTheLinesItDoesNotUnderstand) {
+    const Session session;
+    Buffer out;
+    json list = json::object();
+    list["cmd"] = "import_deck";
+    list["text"] = "Main Deck\r\n2x Unknown\r\n3x Ash Test Unit 1\r\nMaybeboard\r\n1x Ash Test Unit 2";
+    ASSERT_EQ(session.dispatch(list.dump(), out), MC_OK);
+    const json reply = out.parsed();
+    EXPECT_TRUE(reply.at("ok").get<bool>());
+    EXPECT_EQ(reply.at("deck").at("seeker"), nullptr);
+    EXPECT_EQ(reply.at("deck").at("main"), json::parse(R"([{"card":"T-ASH-U01","copies":3}])"));
+    ASSERT_EQ(reply.at("errors").size(), 3U);
+    EXPECT_EQ(reply.at("errors")[0].at("line"), 2);
+    EXPECT_EQ(reply.at("errors")[0].at("error"), "unknown_card");
+    // Maybeboard and the card under it.
+    EXPECT_EQ(reply.at("errors")[1].at("line"), 4);
+    EXPECT_EQ(reply.at("errors")[1].at("error"), "unknown_section");
+    EXPECT_EQ(reply.at("errors")[2].at("line"), 5);
+    EXPECT_EQ(reply.at("errors")[2].at("error"), "unknown_section");
+
+    std::string many = "nonsense";
+    for (int i = 0; i < 150; ++i) {
+        many += "\nnonsense";
+    }
+    json command = json::object();
+    command["cmd"] = "import_deck";
+    command["text"] = many;
+    Buffer truncated;
+    ASSERT_EQ(session.dispatch(command.dump(), truncated), MC_OK);
+    EXPECT_EQ(truncated.parsed().at("errors").size(), 100U);
+    EXPECT_TRUE(truncated.parsed().at("errors_truncated").get<bool>());
+}
+
 TEST(CApi, AnswersBadCommandsWithAnError) {
     const Session session;
     const std::vector<std::pair<std::string, std::string>> cases = {
@@ -152,6 +217,15 @@ TEST(CApi, AnswersBadCommandsWithAnError) {
         {R"({"cmd":42})", "missing_cmd"},
         {R"({"cmd":"delete_everything"})", "unknown_command"},
         {R"({"cmd":"validate_deck"})", "bad_deck"},
+        {R"({"cmd":"import_deck"})", "bad_text"},
+        {R"({"cmd":"import_deck","text":3})", "bad_text"},
+        {R"({"cmd":"export_deck"})", "bad_deck"},
+        {R"({"cmd":"export_deck","deck":[]})", "bad_deck"},
+        {R"({"cmd":"export_deck","deck":{"main":[{"card":"NOT-IN-PACK"}]}})", "unknown_card"},
+        {R"({"cmd":"export_deck","deck":{"main":[{"card":"T-ASH-U01","copies":0}]}})", "bad_copies"},
+        {R"({"cmd":"export_deck","deck":{"main":[{"card":"T-ASH-U01","copies":-2147483648},{"card":"T-ASH-U01","copies":-1}]}})",
+         "bad_copies"},
+        {R"({"cmd":"export_deck","deck":{"seeker":"T-ASH-U01"}})", "wrong_section"},
         {R"({"cmd":"validate_deck","deck":[]})", "bad_deck"},
         {R"({"cmd":"validate_deck","deck":{"seeker":1}})", "bad_deck"},
         {R"({"cmd":"validate_deck","deck":{"main":{}}})", "bad_deck"},

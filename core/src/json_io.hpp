@@ -7,6 +7,7 @@
 #pragma once
 
 #include "mc/core/deck.hpp"
+#include "mc/core/deck_text.hpp"
 #include "mc/core/deck_validator.hpp"
 #include "mc/core/rules_pack.hpp"
 
@@ -31,6 +32,12 @@ public:
 /// Reads a deck shaped like {"seeker","legacy","terrain","main":[{"card","copies"}],"side":[...]}.
 /// Throws DeckFormatError if the shape is not valid.
 [[nodiscard]] Deck deck_from_json(const nlohmann::json& value);
+
+/// The same shape that deck_from_json reads; a missing Seeker, Legacy or terrain is null.
+[[nodiscard]] nlohmann::json deck_to_json(const Deck& deck);
+
+/// Errors of an imported list: [{"line","error","detail"}].
+[[nodiscard]] nlohmann::json deck_text_errors_to_json(const std::vector<DeckTextError>& errors);
 
 [[nodiscard]] nlohmann::json issues_to_json(const std::vector<ValidationIssue>& issues);
 [[nodiscard]] nlohmann::json pack_info_to_json(const RulesPack& pack);

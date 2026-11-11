@@ -95,6 +95,39 @@ Deck deck_from_json(const json& value) {
     return deck;
 }
 
+json deck_to_json(const Deck& deck) {
+    const auto id = [](const std::string& value) { return value.empty() ? json(nullptr) : json(value); };
+    const auto entries = [](const std::vector<DeckEntry>& lines) {
+        json result = json::array();
+        for (const DeckEntry& entry : lines) {
+            json item = json::object();
+            item["card"] = entry.card_id;
+            item["copies"] = entry.copies;
+            result.push_back(std::move(item));
+        }
+        return result;
+    };
+    json result = json::object();
+    result["seeker"] = id(deck.seeker_id);
+    result["legacy"] = id(deck.legacy_id);
+    result["terrain"] = id(deck.terrain_id);
+    result["main"] = entries(deck.main);
+    result["side"] = entries(deck.side);
+    return result;
+}
+
+json deck_text_errors_to_json(const std::vector<DeckTextError>& errors) {
+    json result = json::array();
+    for (const DeckTextError& error : errors) {
+        json item = json::object();
+        item["line"] = error.line;
+        item["error"] = std::string(to_string(error.issue));
+        item["detail"] = error.detail;
+        result.push_back(std::move(item));
+    }
+    return result;
+}
+
 json issues_to_json(const std::vector<ValidationIssue>& issues) {
     json result = json::array();
     for (const ValidationIssue& issue : issues) {

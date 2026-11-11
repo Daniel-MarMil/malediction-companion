@@ -5,6 +5,7 @@
 // random decks and, if a property fails, shrinks the case to a minimal one.
 // To replay a failure: RC_PARAMS="seed=<seed>" ctest -R DeckProperties
 
+#include "mc/core/deck_text.hpp"
 #include "mc/core/deck_validator.hpp"
 #include "test_support.hpp"
 
@@ -14,6 +15,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <numeric>
 #include <set>
 #include <string>
@@ -226,6 +228,74 @@ TEST(DeckProperties, ValidationIsDeterministic) {
             RC_ASSERT(first[i].card_id == second[i].card_id);
             RC_ASSERT(first[i].detail == second[i].detail);
         }
+    });
+    EXPECT_TRUE(ok);
+}
+
+/// The lines of each card added together, in the place of the first one (what import gives).
+std::vector<DeckEntry> merged(const std::vector<DeckEntry>& lines) {
+    std::vector<DeckEntry> result;
+    for (const DeckEntry& line : lines) {
+        const auto found = std::find_if(result.begin(), result.end(),
+                                        [&](const DeckEntry& entry) { return entry.card_id == line.card_id; });
+        if (found == result.end()) {
+            result.push_back(line);
+        } else {
+            found->copies += line.copies;
+        }
+    }
+    return result;
+}
+
+/// Lines of random cards of the pack, of any type, whose merged copies stay within 1 to 99.
+std::vector<DeckEntry> random_lines(const std::vector<const Card*>& all) {
+    const auto picks = *rc::gen::container<std::vector<std::size_t>>(rc::gen::inRange<std::size_t>(0, all.size()));
+    std::vector<DeckEntry> lines;
+    std::map<std::string, int> totals;
+    for (const std::size_t pick : picks) {
+        const std::string& id = all[pick]->id;
+        const int copies = *rc::gen::inRange(1, 100);
+        if (totals[id] + copies <= max_deck_text_copies) {
+            totals[id] += copies;
+            lines.push_back({id, copies});
+        }
+    }
+    return lines;
+}
+
+/// The id of a random card of that type, or none.
+std::string maybe_card_of(CardType type) {
+    std::vector<std::string> ids{""};
+    for (const Card& card : test_pack().cards()) {
+        if (card.type == type) {
+            ids.push_back(card.id);
+        }
+    }
+    return ids[*rc::gen::inRange<std::size_t>(0, ids.size())];
+}
+
+TEST(DeckProperties, ExportThenImportGivesTheSameDeck) {
+    std::vector<const Card*> all;
+    for (const Card& card : test_pack().cards()) {
+        all.push_back(&card);
+    }
+    const bool ok = rc::check("importing an exported deck gives the same deck, with repeated lines merged", [&] {
+        Deck deck;
+        deck.seeker_id = maybe_card_of(CardType::Seeker);
+        deck.legacy_id = maybe_card_of(CardType::Legacy);
+        deck.terrain_id = maybe_card_of(CardType::Terrain);
+        deck.main = random_lines(all);
+        deck.side = random_lines(all);
+
+        const std::string text = export_deck_text(test_pack(), deck);
+        const ImportedDeck back = import_deck_text(test_pack(), text);
+        RC_ASSERT(back.errors.empty());
+        Deck expected = deck;
+        expected.main = merged(deck.main);
+        expected.side = merged(deck.side);
+        RC_ASSERT(back.deck == expected);
+        // Exporting what was imported writes the same text.
+        RC_ASSERT(export_deck_text(test_pack(), back.deck) == text);
     });
     EXPECT_TRUE(ok);
 }

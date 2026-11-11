@@ -22,6 +22,7 @@ add_executable(mc_core_tests
     rules_pack_test.cpp
     deck_validator_test.cpp
     deck_properties_test.cpp
+    deck_text_test.cpp
     signature_test.cpp
     trusted_keys_test.cpp
     c_api_test.cpp

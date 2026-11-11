@@ -19,7 +19,8 @@ Android app, the iOS app and the server will all use (ADR-01).
 |---|---|
 | Rules packs (`mc-rules-pack` format 1) | Done: reading and checking a pack, indexing its cards, Ed25519 signature check against a given key or the trusted keys |
 | Deck validation (RF-06) | Done: 17 rule codes, with the limits taken from the pack |
-| C API (ADR-11) | Done: seven functions and two commands, `pack_info` and `validate_deck` |
+| Deck lists as text (RF-09 and RF-10) | Done: import of the list that malediction.gg exports, with an error for each line it cannot use, and export in the same format |
+| C API (ADR-11) | Done: seven functions and four commands, `pack_info`, `validate_deck`, `import_deck` and `export_deck` |
 | `mc_cli` | Done: a command-line client to try the C API by hand |
 | Tests, sanitizers, coverage, fuzzing, license checks | Done, as local tasks in `tools/ci/ci.sh`; there is no remote CI |
 | Android library (`libmc_core.so`, 16 KB pages) | Set up (`tools/ci/ci.sh android`); no app uses it yet |
@@ -37,11 +38,13 @@ core/include/mc/core/card.hpp           Card, CardType, Rank and their text code
 core/include/mc/core/rules_pack.hpp     RulesPack, PackInfo, DeckRules and PackError
 core/include/mc/core/deck.hpp           Deck and DeckEntry
 core/include/mc/core/deck_validator.hpp Rule codes, ValidationIssue and validate_deck()
+core/include/mc/core/deck_text.hpp      import_deck_text(), export_deck_text() and their errors
 core/include/mc/core/signature.hpp      verify_signature() (Ed25519)
 core/include/mc/core/trusted_keys.hpp   trusted_keys(), verify_with_any_key() and verify_trusted()
 core/src/mc_api.cpp                     The C functions: limits, command routing, error replies
 core/src/rules_pack.cpp                 RulesPack::parse(): reads and checks a pack
 core/src/deck_validator.cpp             The Checker class, which applies the deck rules
+core/src/deck_text.cpp                  The Importer class, which reads deck lists, and the writer
 core/src/json_io.hpp, json_io.cpp       JSON to domain types and back (internal)
 core/src/card.cpp                       Text codes of card types and ranks
 core/src/signature.cpp                  The libsodium call
@@ -114,10 +117,11 @@ Any problem throws a `PackError` that starts with the path of the field, for exa
 
 1. rejects commands larger than 1 MiB (`too_large`);
 2. parses the JSON (`invalid_json`) and requires an object with a `cmd` string (`missing_cmd`);
-3. sends `pack_info` and `validate_deck` to their handlers; any other command is
-   `unknown_command`.
+3. sends `pack_info`, `validate_deck`, `import_deck` and `export_deck` to their handlers; any
+   other command is `unknown_command`.
 
-For `validate_deck`, `deck_from_json` (`json_io.cpp`) turns the `deck` object into a `Deck`.
+For `validate_deck` and `export_deck`, `deck_from_json` (`json_io.cpp`) turns the `deck` object
+into a `Deck`.
 Missing or `null` slots count as empty; `main` and `side` must be lists of `{"card","copies"}`
 with at most 500 lines, and `copies` must be an integer that fits in an `int`. A deck with the
 wrong shape is a `bad_deck` error. A deck that breaks the rules is not an error: it gets a
@@ -152,6 +156,43 @@ unique cards; legendary cards have no copy limit in the pack, so they cannot go 
 Each issue has a stable `rule` code, which the app will translate for players, the `card` it
 refers to when there is one, and a `detail` in English for debugging.
 
+### 4. Deck lists as text
+
+`import_deck` needs a `text` string (otherwise `bad_text`). `import_deck_text`
+(`deck_text.cpp`) splits it into lines, accepts Windows line endings and a byte order mark at
+the start, trims each line and reads the lines in order:
+
+| Line | What the importer does | Error codes |
+|---|---|---|
+| Blank | Skips it, wherever it is | |
+| `Main Deck` or `Side Deck` | Opens that section. A title may be in any case and end with a colon; a section may be empty, missing or opened again | |
+| `Nx Name` before the first title | Fills the Seeker, the Legacy or the terrain according to the card's type, in any order, and only with `1x` | `bad_copies`; `wrong_section` for another type or a second Seeker, Legacy or terrain |
+| `Nx Name` after `Main Deck` or `Side Deck` | Adds a line to that section. The same card on several lines is added up in the place of its first line | `bad_copies` outside 1 to 99, also once added up; `too_many_lines` over 500 different cards |
+| Any other line that does not start with a digit and is not the name of a card, such as `Maybeboard` | Takes it as the title of an unknown section. It and every line after it, up to the next `Main Deck` or `Side Deck`, are reported, and none of their cards is imported, so that no card ends up in the wrong section | `unknown_section` |
+| Anything else, such as `3xName`, `3x` or a card name without copies | Reports it; the section does not change | `unrecognized_line` |
+
+A deck name above the first lines is an unknown section too, so it hides the Seeker, the Legacy
+and the terrain until `Main Deck`.
+
+`Nx` takes `x` or `X`, leading zeros and spaces before the `x` (`03x`, `3 x`), and needs a space
+or a tab after it. Names are compared by a key: ASCII letters in lowercase, ’ and ‘ as ', and
+runs of spaces, tabs and no-break spaces as one space, with none at the ends. A comma is just
+another character. A name that no card of the pack has is `unknown_card`, and one that several
+cards share is `ambiguous_card`. Each error has the line number, counting from 1, and a `detail`
+that quotes at most 120 bytes of the line. The importer does not check the deck rules, never
+throws for bad text, keeps what it understood and stops collecting errors at 100
+(`errors_truncated`).
+
+`export_deck_text` writes the Seeker, the Legacy and the terrain that the deck has, with `1x`,
+then `Main Deck`, always, and `Side Deck` if the side deck has cards, each title after a blank
+line except at the start. It uses the names of the pack, merges repeated lines, separates lines
+with `\n` and does not end with one. Before returning, it imports its own text and checks that
+the deck comes back the same. Otherwise it throws `DeckExportError`, which `dispatch` answers as
+`MC_ERR_BAD_COMMAND` with its code: `unknown_card` for an id that is not in the pack,
+`wrong_section` for a card of another type in the Seeker, Legacy or terrain slot, `bad_copies`
+for copies outside 1 to 99, also once added up, and `not_exportable` for a name that would not
+read back, for example one that two cards share.
+
 ## What is tested
 
 | File | What it covers |
@@ -159,24 +200,25 @@ refers to when there is one, and a `detail` in English for debugging.
 | `tests/card_test.cpp` | Type and rank codes go both ways; unknown names are rejected; rule codes are unique and in snake_case |
 | `tests/rules_pack_test.cpp` | The test pack; defaults; sorted sigils; every kind of malformed pack is rejected with the path of the field |
 | `tests/deck_validator_test.cpp` | Each rule on its own: Seeker, Legacy, terrain, sizes, side deck, copy limits (also across lines and with the side deck), types, ranks, sigils, unaligned cards, cards that should not be in the deck and very large copy counts |
-| `tests/deck_properties_test.cpp` | Properties checked by RapidCheck on hundreds of random decks: legal cards within their limits only fail on size, order and split lines do not change the result, going over a limit is always detected, cards that should not be in the deck always count towards the size and mark it, without a valid Seeker that is the only issue, and validation is deterministic |
+| `tests/deck_properties_test.cpp` | Properties checked by RapidCheck on hundreds of random decks: legal cards within their limits only fail on size, order and split lines do not change the result, going over a limit is always detected, cards that should not be in the deck always count towards the size and mark it, without a valid Seeker that is the only issue, validation is deterministic, and exporting a random deck and importing the text gives the same deck |
+| `tests/deck_text_test.cpp` | Deck lists with the test pack: a list shaped like a malediction.gg export in both directions, Windows line endings and a byte order mark, case and extra spaces, the first lines in any order, repeated cards, empty and unknown sections, every kind of bad line with its number, the limits on copies, errors and lines, long lines in the errors, names shared by two cards and decks that cannot be exported |
 | `tests/signature_test.cpp` | Ed25519 with the RFC 8032 test vector; a modified pack, a modified signature, another key and wrong sizes are rejected |
 | `tests/trusted_keys_test.cpp` | Several keys with the signer in any position, no matching key, altered packs and signatures, and no test key among the trusted ones |
 | `tests/trusted_keys_build_test.cpp` | Built twice with a test development key: it is trusted with `MC_TRUST_DEV_KEY` and rejected without it |
 | `tests/CMakeLists.txt` (`cmake.dev_key_*`) | CMake refuses the development key outside Debug and leaves it off by default in Release |
 | `tests/pack_tool_test.cpp` | `mc_pack_tool` with fixed seeds and the lowest Argon2id limits: keygen, sign and verify end to end, wrong password, altered key file, pack or signature, limits stored in the file, no overwriting and the command line |
-| `tests/c_api_test.cpp` | The C API as the apps will use it: sessions, null-terminated buffers, every error code, size limits, argument checks and signatures |
+| `tests/c_api_test.cpp` | The C API as the apps will use it: sessions, null-terminated buffers, validating, importing and exporting decks, every error code, size limits, argument checks and signatures |
 | `tests/c_header_check.c` | `mc_api.h` compiles as C11 and links from C |
 | `examples/CMakeLists.txt` | `mc_cli` on each example command |
-| `fuzz/` | libFuzzer with random packs and random commands: the core must never crash and must always answer with JSON |
+| `fuzz/` | libFuzzer with random packs, random commands and random deck lists: the core must never crash and must always answer with JSON, and a list it reads must export and read back as the same deck |
 
 Before every commit, `tools/ci/ci.sh all` runs locally: formatting and clang-tidy, the tests with
 AddressSanitizer and UBSan, ThreadSanitizer and Release, at least 90 % line coverage of `core/src`
 (RNF-17), the fuzzers, the Android build and the license checks. There is no remote continuous
 integration.
 
-Not covered yet: real Malediction cards (the official pack stays private and is tested only on
-the development machine), `mc_pack_tool keygen` with the real Argon2id limits and the terminal
+Not covered yet: real Malediction cards and decklists (the official pack and real lists stay
+private and are tested only on the development machine), `mc_pack_tool keygen` with the real Argon2id limits and the terminal
 password prompt (they need 1 GiB and a person at the keyboard) and, naturally, the apps.
 
 ## Try it yourself
@@ -228,6 +270,19 @@ To try your own deck, copy `examples/commands/valid-deck.json`, change it and ru
 way; the card ids are in the test pack. `mc_cli` exits with 0 when the core answers `MC_OK`, 1
 when it rejects the pack or the command, and 2 for usage or file errors.
 
+Deck lists work the same way. `import-deck.json` has a list with an unknown card on line 3 and
+an unknown section, `Maybeboard`, on line 4, with a card under it on line 5: the reply has the
+deck with the one card it could import and an error for each of those three lines. `export_deck`
+turns a deck back into a list:
+
+```sh
+"$cli" "$pack" examples/commands/import-deck.json | python3 -m json.tool
+echo '{"cmd":"export_deck","deck":{"seeker":"T-SEEK-ASH","main":[{"card":"T-ASH-U01","copies":3}]}}' | "$cli" "$pack"
+```
+
+The second command answers
+`{"ok":true,"text":"1x Kindra, the Ash Test Seeker\n\nMain Deck\n3x Ash Test Unit 1"}`.
+
 ### Break it on purpose
 
 A quick way to see the tests at work:
@@ -270,8 +325,7 @@ With clangd, F12 goes to a definition and Shift+F12 lists its references.
 Phase 1 is the Android app with decks and local matches, with the official cards and theme from
 the private pack and the server's account service (ADR-05). In terms of code:
 
-- In the core: importing decks from the text that malediction.gg exports (RF-10), the counters
-  and the match event reducer (ADR-01 and ADR-04).
+- In the core: the counters and the match event reducer (ADR-01 and ADR-04).
 - An Android Studio project in Kotlin with Jetpack Compose that builds `libmc_core.so` through
   Gradle and calls the C API through a thin JNI layer (ADR-02 and ADR-11).
 - The account service on the server (ADR-03 and ADR-05).

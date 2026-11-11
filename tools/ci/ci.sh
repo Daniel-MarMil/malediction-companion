@@ -105,7 +105,7 @@ ensure_ndk() {
 run_fuzzer() {
     local name="$1" seeds="$2" corpus
     corpus="$(mktemp -d)"
-    cp "$seeds"/*.json "$corpus/"
+    cp "$seeds"/* "$corpus/"
     "$build_root/fuzz/fuzz/mc_fuzz_$name" -max_total_time="$fuzz_seconds" "$corpus"
 }
 
@@ -131,6 +131,7 @@ run_task() {
             build_preset fuzz no-tests
             run_fuzzer dispatch fuzz/corpus/dispatch
             run_fuzzer rules_pack content/test
+            run_fuzzer deck_text fuzz/corpus/deck_text
             ;;
         lint)
             setup

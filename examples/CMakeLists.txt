@@ -25,6 +25,7 @@ foreach(_mc_case
         "pack_info|pack-info.json|\"id\":\"mc-test\""
         "valid_deck|valid-deck.json|\"valid\":true"
         "invalid_deck|invalid-deck.json|\"rule\":\"legacy_mismatch\""
+        "import_deck|import-deck.json|\"error\":\"unknown_card\",\"line\":3"
         "unknown_command|unknown-command.json|\"error\":\"unknown_command\"")
     string(REPLACE "|" ";" _mc_case "${_mc_case}")
     list(GET _mc_case 0 _mc_name)

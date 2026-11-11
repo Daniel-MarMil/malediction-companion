@@ -15,7 +15,7 @@
     "copy_limits_include_side": true
   },
   "cards": [
-    { "id": "T-SEEK-ASH", "name": "Ash Test Seeker", "type": "seeker", "rank": "legendary", "sigils": ["ash"] },
+    { "id": "T-SEEK-ASH", "name": "Kindra, the Ash Test Seeker", "type": "seeker", "rank": "legendary", "sigils": ["ash"] },
     { "id": "T-SEEK-DUAL", "name": "Ash and Tide Test Seeker", "type": "seeker", "rank": "legendary", "sigils": ["tide", "ash"] },
     { "id": "T-SEEK-THORN", "name": "Thorn Test Seeker", "type": "seeker", "rank": "legendary", "sigils": ["thorn"] },
 
@@ -37,8 +37,8 @@
     { "id": "T-ASH-Q01", "name": "Ash Test Unique", "type": "unit", "rank": "unique", "cost": 6, "sigils": ["ash"] },
     { "id": "T-ASH-L01", "name": "Ash Test Legendary", "type": "unit", "rank": "legendary", "cost": 8, "sigils": ["ash"] },
     { "id": "T-ASH-S01", "name": "Ash Test Spell 1", "type": "spell", "rank": "basic", "cost": 1, "sigils": ["ash"] },
-    { "id": "T-ASH-S02", "name": "Ash Test Spell 2", "type": "spell", "rank": "basic", "cost": 2, "sigils": ["ash"] },
-    { "id": "T-ASH-S03", "name": "Ash Test Spell 3", "type": "spell", "rank": "basic", "cost": 3, "sigils": ["ash"] },
+    { "id": "T-ASH-S02", "name": "Kindra’s Test Spell", "type": "spell", "rank": "basic", "cost": 2, "sigils": ["ash"] },
+    { "id": "T-ASH-S03", "name": "Kindra's Test Ember", "type": "spell", "rank": "basic", "cost": 3, "sigils": ["ash"] },
     { "id": "T-ASH-I01", "name": "Ash Test Item", "type": "item", "rank": "basic", "cost": 2, "sigils": ["ash"] },
 
     { "id": "T-TIDE-U01", "name": "Tide Test Unit 1", "type": "unit", "rank": "basic", "cost": 1, "sigils": ["tide"] },

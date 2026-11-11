@@ -1,0 +1,12 @@
+1x Thorn Test Seeker
+1x Thorn Test Unit 1
+2x Thorn Test Legacy
+main deck:
+0x Thorn Test Unit 2
+100x Thorn Test Unit 3
+3x Nope
+Maybeboard
+3xThorn Test Unit 1
+  SIDE DECK  
+60x Test Relic
+40x Test Relic

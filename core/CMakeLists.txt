@@ -7,6 +7,7 @@ add_library(mc_core
     src/card.cpp
     src/rules_pack.cpp
     src/deck_validator.cpp
+    src/deck_text.cpp
     src/json_io.cpp
     src/signature.cpp
     src/trusted_keys.cpp

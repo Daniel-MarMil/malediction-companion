@@ -12,6 +12,8 @@ namespace mc::core {
 struct DeckEntry {
     std::string card_id;
     int copies{1};
+
+    friend bool operator==(const DeckEntry&, const DeckEntry&) = default;
 };
 
 /// Warband: Seeker, Legacy and terrain, plus the main deck and the side deck.
@@ -21,6 +23,8 @@ struct Deck {
     std::string terrain_id;
     std::vector<DeckEntry> main;
     std::vector<DeckEntry> side;
+
+    friend bool operator==(const Deck&, const Deck&) = default;
 };
 
 }  // namespace mc::core

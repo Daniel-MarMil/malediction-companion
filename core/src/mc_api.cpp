@@ -6,6 +6,7 @@
 #include "mc/mc_api.h"
 
 #include "json_io.hpp"
+#include "mc/core/deck_text.hpp"
 #include "mc/core/deck_validator.hpp"
 #include "mc/core/rules_pack.hpp"
 #include "mc/core/signature.hpp"
@@ -105,6 +106,45 @@ Reply validate_deck(const mc_session& session, const json& command) {
     return {.status = MC_OK, .body = core::detail::to_text(body)};
 }
 
+Reply import_deck(const mc_session& session, const json& command) {
+    const auto field = command.find("text");
+    if (field == command.end() || !field->is_string()) {
+        return bad_command("bad_text", "the text field must be a string");
+    }
+    const core::ImportedDeck imported = core::import_deck_text(session.pack, field->get_ref<const std::string&>());
+    json body = json::object();
+    body["ok"] = true;
+    body["deck"] = core::detail::deck_to_json(imported.deck);
+    body["errors"] = core::detail::deck_text_errors_to_json(imported.errors);
+    if (imported.errors_truncated) {
+        body["errors_truncated"] = true;
+    }
+    return {.status = MC_OK, .body = core::detail::to_text(body)};
+}
+
+Reply export_deck(const mc_session& session, const json& command) {
+    const auto field = command.find("deck");
+    if (field == command.end()) {
+        return bad_command("bad_deck", "the deck field is missing");
+    }
+    core::Deck deck;
+    try {
+        deck = core::detail::deck_from_json(*field);
+    } catch (const core::detail::DeckFormatError& error) {
+        return bad_command("bad_deck", error.what());
+    }
+    std::string text;
+    try {
+        text = core::export_deck_text(session.pack, deck);
+    } catch (const core::DeckExportError& error) {
+        return bad_command(error.code(), error.what());
+    }
+    json body = json::object();
+    body["ok"] = true;
+    body["text"] = std::move(text);
+    return {.status = MC_OK, .body = core::detail::to_text(body)};
+}
+
 Reply dispatch(const mc_session& session, std::string_view text) {
     if (text.size() > max_command_bytes) {
         return bad_command("too_large", "the command is larger than 1 MiB");
@@ -125,6 +165,12 @@ Reply dispatch(const mc_session& session, std::string_view text) {
     }
     if (cmd == "validate_deck") {
         return validate_deck(session, command);
+    }
+    if (cmd == "import_deck") {
+        return import_deck(session, command);
+    }
+    if (cmd == "export_deck") {
+        return export_deck(session, command);
     }
     return bad_command("unknown_command", "unknown command: " + cmd);
 }

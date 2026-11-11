@@ -7,6 +7,9 @@
 *.cmd text eol=crlf
 *.ps1 text eol=crlf
 
+# Fuzzing seeds are inputs and stay byte for byte: some have Windows line endings.
+fuzz/corpus/** -text
+
 # Binaries
 *.png binary
 *.jpg binary
