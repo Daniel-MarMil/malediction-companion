@@ -8,7 +8,8 @@ SPDX-License-Identifier: Apache-2.0
 A digital companion for games of [Malediction](https://malediction.gg), the card game with
 miniatures by Loot Studios: decks that follow the rules, echo and mastery counters kept in sync
 between phones, and a match log. It takes the flow of the Warhammer 40,000 app as a reference,
-adapted to a card game.
+adapted to a card game. As in Seekers League, each player's decks and matches are kept on a
+server, with a copy on the phone to play without a network (ADR-13).
 
 **Unofficial project.** It is not affiliated with or endorsed by Loot Studios.
 
@@ -26,8 +27,8 @@ Phase 0: the shared C++20 core.
 - `mc_pack_tool`, the development tool that creates the pack keys and signs packs.
 - Tests with GoogleTest and RapidCheck, sanitizers, coverage and fuzzing with libFuzzer.
 
-The Android app (Kotlin with Jetpack Compose) comes next, and then the iOS app (Swift with
-SwiftUI). The iOS app needs a Mac with Xcode; until there is one, work continues on Android.
+The Android app (Kotlin with Jetpack Compose) and the first server modules come next, and then
+the iOS app (Swift with SwiftUI). The iOS app needs a Mac with Xcode; until there is one, work continues on Android.
 
 [`docs/code-tour.md`](docs/code-tour.md) explains how the code is organized, how a command flows
 through the core, what is tested and how to try it. Requirement IDs (RF-xx for functional and

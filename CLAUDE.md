@@ -6,9 +6,9 @@ SPDX-License-Identifier: Apache-2.0
 # Seekers Companion: notes for Claude Code
 
 Unofficial companion app for Malediction, the card game by Loot Studios. The repository holds
-the shared C++20 core (`core/`) with its C API; the Android app (Kotlin, Jetpack Compose) and
-the iOS app (Swift, SwiftUI) come later. Read `docs/code-tour.md` first; the decisions are in
-`docs/adr/`.
+the shared C++20 core (`core/`) with its C API; the Android app (Kotlin, Jetpack Compose), the
+iOS app (Swift, SwiftUI) and the server (C++20 with Drogon), which keeps each account's data
+(ADR-13), come later. Read `docs/code-tour.md` first; the decisions are in `docs/adr/`.
 
 ## Language
 

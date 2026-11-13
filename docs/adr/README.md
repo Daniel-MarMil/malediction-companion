@@ -21,3 +21,4 @@ Every decision follows the same outline: context, decision, rejected alternative
 | [ADR-10](0010.md) | CMake and vcpkg in manifest mode with pinned versions | Accepted |
 | [ADR-11](0011.md) | A single C boundary between the core and the apps | Accepted |
 | [ADR-12](0012.md) | Official content in a private pack, separate from the code | Accepted |
+| [ADR-13](0013.md) | The server as the source of truth for each account | Accepted |

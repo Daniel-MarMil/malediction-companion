@@ -15,6 +15,10 @@ terms of use forbid reproducing or distributing it without express permission, e
 non-profit basis. The project is developed as if it had a license (ADR-09), but nothing official
 leaves the development machine until there is a written license (ADR-12).
 
+The server's Catalog module serves this pack to the app as signed data. Until there is a license,
+only a private development server may serve it (ADR-12 and ADR-13), and importing and signing the
+pack stay on the development machine.
+
 ## What goes here
 
 Planned layout. The core already reads the rules pack; the theme arrives in phase 1:
@@ -42,4 +46,4 @@ content/official/
 - **Accessibility:** the official colors are used where they meet the contrast required by
   RNF-13; otherwise, only as an accent.
 
-Without this folder, the app uses a neutral theme and the app's own card sheets (RF-03).
+Without this folder, the app uses a neutral theme.

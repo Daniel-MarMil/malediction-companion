@@ -25,7 +25,7 @@ Android app, the iOS app and the server will all use (ADR-01).
 | Tests, sanitizers, coverage, fuzzing, license checks | Done, as local tasks in `tools/ci/ci.sh`; there is no remote CI |
 | Android library (`libmc_core.so`, 16 KB pages) | Set up (`tools/ci/ci.sh android`); no app uses it yet |
 | Pack keys (ADR-06) | Done: `mc_pack_tool` (keygen, sign, verify) and the trusted keys of the core; the development key exists (`keys/dev.pub`), and there are no release keys yet |
-| Android app, account service, server, iOS app | Not started (phases 1 to 5) |
+| Android app, server (accounts, catalog, decks and history), iOS app | Not started (phases 1 to 5) |
 
 The official Malediction content is not part of the code: the tests use made-up cards
 (ADR-12).
@@ -323,9 +323,15 @@ With clangd, F12 goes to a definition and Shift+F12 lists its references.
 ## What comes next
 
 Phase 1 is the Android app with decks and local matches, with the official cards and theme from
-the private pack and the server's account service (ADR-05). In terms of code:
+the private pack, and the first server (ADR-05 and ADR-13). In terms of code:
 
 - In the core: the counters and the match event reducer (ADR-01 and ADR-04).
 - An Android Studio project in Kotlin with Jetpack Compose that builds `libmc_core.so` through
   Gradle and calls the C API through a thin JNI layer (ADR-02 and ADR-11).
-- The account service on the server (ADR-03 and ADR-05).
+- The phase 1 server (ADR-03, ADR-05 and ADR-13): accounts; the catalog, which serves the signed
+  packs; and each account's decks and history, which the server owns. Deck synchronization
+  follows the rules in ADR-13: the server rejects changes made on an old version, discards decks
+  with cards outside every published pack, and keeps decks that break the building rules with
+  their validation state.
+- A SQLite module on the phone that keeps the phone's copy of decks and history and the queue of
+  pending changes; local matches are uploaded when the network comes back (RF-28).
