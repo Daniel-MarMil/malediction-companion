@@ -10,10 +10,12 @@
 #   coverage                tests with coverage; fails below 90 % (RNF-17)
 #   fuzz                    build the fuzzers and run each one for MC_FUZZ_SECONDS seconds (RNF-19)
 #   lint                    clang-format and clang-tidy (core and mc_pack_tool)
+#   content                 tests of the official pack importer (tools/content), with the asan mc_cli
 #   android                 library for arm64-v8a and x86_64, plus the 16 KB check (RNF-20)
 #   licenses                SPDX headers and licenses of the vcpkg dependencies (RNF-15)
 #   scancode                ScanCode Toolkit finds no GPL, LGPL or AGPL in our own code (ADR-08, RNF-15)
-#   all                     all of the above, in that order
+#   all                     all of the above (in the order: lint, asan, content, tsan, release, coverage,
+#                           fuzz, android, licenses, scancode)
 #   ndk                     only downloads NDK r30 if it is missing (used by tools/dev/setup-wsl.sh)
 #
 # Optional variables:
@@ -45,7 +47,7 @@ ndk_version="r30"
 ndk_sha1="5107f898313790e449e87eee2183d9a20602dee9"
 
 usage() {
-    sed -n '8,24p' "${BASH_SOURCE[0]}"
+    sed -n '8,26p' "${BASH_SOURCE[0]}"
 }
 
 setup_done=false
@@ -133,6 +135,12 @@ run_task() {
             run_fuzzer rules_pack content/test
             run_fuzzer deck_text fuzz/corpus/deck_text
             ;;
+        content)
+            # Made-up pages only, no network; the core answers through the asan mc_cli.
+            setup
+            build_preset asan no-tests
+            MC_CLI="$build_root/asan/examples/mc_cli" python3 -m unittest discover -s tools/content/tests -t tools/content
+            ;;
         lint)
             setup
             mapfile -t sources < <(find core tests fuzz examples tools/pack -name '*.[ch]' -o -name '*.[ch]pp' | sort)
@@ -179,7 +187,7 @@ run_task() {
             ;;
         all)
             local task
-            for task in lint asan tsan release coverage fuzz android licenses scancode; do
+            for task in lint asan content tsan release coverage fuzz android licenses scancode; do
                 run_task "$task"
             done
             ;;

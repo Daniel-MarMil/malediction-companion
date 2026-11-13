@@ -17,13 +17,14 @@ Android app, the iOS app and the server will all use (ADR-01).
 
 | Part | State |
 |---|---|
-| Rules packs (`mc-rules-pack` format 1) | Done: reading and checking a pack, indexing its cards, Ed25519 signature check against a given key or the trusted keys |
+| Rules packs (`mc-rules-pack` format 2) | Done: reading and checking a pack with its factions, cards (with traits, abilities, stats and the hash of each image) and official decks, indexing its cards, Ed25519 signature check against a given key or the trusted keys |
 | Deck validation (RF-06) | Done: 17 rule codes, with the limits taken from the pack |
 | Deck lists as text (RF-09 and RF-10) | Done: import of the list that malediction.gg exports, with an error for each line it cannot use, and export in the same format |
 | C API (ADR-11) | Done: seven functions and four commands, `pack_info`, `validate_deck`, `import_deck` and `export_deck` |
 | `mc_cli` | Done: a command-line client to try the C API by hand |
 | Tests, sanitizers, coverage, fuzzing, license checks | Done, as local tasks in `tools/ci/ci.sh`; there is no remote CI |
 | Android library (`libmc_core.so`, 16 KB pages) | Set up (`tools/ci/ci.sh android`); no app uses it yet |
+| Official pack importer (`tools/content/`) | Done: reads the public card pages of malediction.gg slowly, with a cache outside the repository, and writes the pack, its images and the official decks to `content/official/`, which git ignores (ADR-12); its tests use made-up pages |
 | Pack keys (ADR-06) | Done: `mc_pack_tool` (keygen, sign, verify) and the trusted keys of the core; the development key exists (`keys/dev.pub`), and there are no release keys yet |
 | Android app, server (accounts, catalog, decks and history), iOS app | Not started (phases 1 to 5) |
 
@@ -34,8 +35,8 @@ The official Malediction content is not part of the code: the tests use made-up 
 
 ```text
 core/include/mc/mc_api.h                C API: the only thing the apps see
-core/include/mc/core/card.hpp           Card, CardType, Rank and their text codes
-core/include/mc/core/rules_pack.hpp     RulesPack, PackInfo, DeckRules and PackError
+core/include/mc/core/card.hpp           Card, CardStats, CardImage, CardType, Rank and their text codes
+core/include/mc/core/rules_pack.hpp     RulesPack, PackInfo, DeckRules, Faction, OfficialDeck and PackError
 core/include/mc/core/deck.hpp           Deck and DeckEntry
 core/include/mc/core/deck_validator.hpp Rule codes, ValidationIssue and validate_deck()
 core/include/mc/core/deck_text.hpp      import_deck_text(), export_deck_text() and their errors
@@ -55,6 +56,9 @@ tests/                                  GoogleTest and RapidCheck tests, C11 hea
 examples/mc_cli.c                       Command-line client; examples/commands/ has sample commands
 fuzz/                                   libFuzzer targets and their seed corpus
 tools/pack/                             mc_pack_tool: keygen, sign and verify (development only)
+tools/content/import_official.py        The official pack importer (development only, Python 3)
+tools/content/mc_content/               Its modules: fetch, cache, sitemap, card_page, ids, manual, core, pack
+tools/content/tests/                    Its unittest tests, with made-up pages (tests/fixtures.py)
 content/test/rules-pack.test.json       The made-up pack used by tests, fuzzers and mc_cli
 ```
 
@@ -96,20 +100,32 @@ not call either on its own: the app calls one before creating a session. `mc_pac
 `mc_session_create` rejects packs larger than 16 MiB and passes the bytes to
 `RulesPack::parse` (`rules_pack.cpp`), which:
 
-1. parses the JSON and checks that `format` is `mc-rules-pack` and `format_version` is 1;
+1. parses the JSON and checks that `format` is `mc-rules-pack` and `format_version` is 2 (format 1
+   is no longer read since 2026-11-13);
 2. reads the metadata (`id`, `version`, `date`, `origin`, `license`) and the `rules`:
    `deck_min`, `deck_max`, `side_max`, `copy_limits` per rank, and two switches that default to
    true, `unaligned_cards_allowed` and `copy_limits_include_side`;
-3. reads every card: `id`, `name`, `type`, and optionally `rank` (default: none), `cost`
-   (default: 0) and `sigils` (sorted and without duplicates; no sigils means an unaligned card).
-   A Legacy also needs `seeker` and `starting_echo`;
-4. indexes the cards by `id`, which must be unique, and checks that every Legacy points to a
-   Seeker in the same pack.
+3. reads the `factions`: each with an `id` and the `name` to show;
+4. reads every card: `id`, `name`, `type`, and optionally `rank` (default: none), `cost` (an
+   integer, or null while the pack does not give it), `sigils` (faction ids of the pack, sorted
+   and without duplicates; no sigils means an unaligned card), `traits` and `abilities` (lists of
+   text), `stats` (the seven stats of a unit, all required: `accuracy`, `power_hit`, `power_graze`,
+   `range`, `speed`, `defense` and `max_health`, each a number or null (the card's dash, shown as
+   –); null is not 0, and in `CardStats` it is an empty `std::optional`), `rules_text` (null for now), `image` (`file`, a path
+   inside the pack folder; `sha256`, so the signature also covers the image; and `source`) and
+   `source` (the page it came from). A Legacy also needs `seeker` and `starting_echo`;
+5. indexes the cards by `id`, which must be unique and made of ASCII letters, digits, `-`, `_`
+   and `.`, and checks that every Legacy points to a Seeker in the same pack;
+6. reads the official decks (`decks`, RF-61), each with an `id`, a `name`, an optional `url` and
+   a `deck` in the same shape as `validate_deck`: its Seeker, Legacy, terrain and cards must be in
+   the pack and the Legacy must belong to the Seeker. The deck rules are not checked here,
+   because a later rules revision may leave an official deck invalid (RF-07).
 
 Any problem throws a `PackError` that starts with the path of the field, for example
 `cards[2].rank: unknown rank`. `mc_session_create` turns it into `MC_ERR_BAD_PACK` and the reply
 `{"ok":false,"error":"bad_pack","detail":"..."}`. The parser also has defensive limits: at most
-20,000 cards, ids of up to 64 characters, up to 8 sigils per card and numbers up to 1,000.
+20,000 cards, ids of up to 64 characters, up to 8 sigils per card, 32 factions, 32 traits or
+abilities per card, 1,000 official decks and numbers up to 1,000.
 
 ### 2. Running a command
 
@@ -193,12 +209,43 @@ the deck comes back the same. Otherwise it throws `DeckExportError`, which `disp
 for copies outside 1 to 99, also once added up, and `not_exportable` for a name that would not
 read back, for example one that two cards share.
 
+### 5. Importing the official pack
+
+`tools/content/import_official.py` (Python 3, standard library only) builds the official pack on
+the development machine; the server will only serve it (ADR-13). It never signs: the pack is
+signed afterwards with `mc_pack_tool sign`. `mc_content/importer.py` runs these steps and writes
+nothing to `content/official/` unless all of them pass:
+
+1. **Download** (`fetch.py`, `cache.py`): robots.txt first, then `card-sitemap.xml` and each
+   `/card/<slug>/` page, one request at a time with at least 2 s between them, a size limit on
+   each response and a User-Agent with the tool's name and the repository URL. 401 or 403 stops
+   the import; 429 or 5xx waits for Retry-After once and stops if it happens again. Pages come
+   from the cache (`~/.cache/seekers-companion/content/`) while their `lastmod` in the sitemap is
+   the same, and images while their URL is the same.
+2. **Pages** (`card_page.py`): name, factions, type, rank, traits, abilities, stats and image of
+   each card. A stat is a number or null (the card's dash, shown as –); the site writes the dash
+   as `-` or `--`, and any other text that is not a number stops the import. A page with another shape is reported and nothing is written.
+3. **Ids** (`ids.py`): the slug the first time, then kept in `content/official/card-ids.json` and
+   tied to the WordPress post id, so a new slug keeps the id. Then every name goes through
+   `import_deck` in the core (`core.py`, through `mc_cli`): if two cards cannot be told apart,
+   the import stops.
+4. **Manual file** (`manual.py`): `content/official/seekers-legacies.json` pairs each Legacy with
+   its Seeker and gives its starting echo, which the pages do not show. If it is missing, the
+   importer writes it with empty values and stops.
+5. **Official decks**: each `content/official/decks/<id>.txt`, exported from the Deck Builder, is
+   read with `import_deck` and checked with `validate_deck` on the new pack; its Legacy must be the
+   one the manual file gives its Seeker.
+6. **Images and pack** (`pack.py`): `images/<card id>.<ext>`, and the pack in format 2, sorted by
+   id, dated with the newest `lastmod` and versioned with that date and a hash, so the same site
+   gives the same bytes. The core must accept the pack (`pack_info`) before it replaces the old
+   one. The report lists new, removed and changed cards and the sigil check of RF-06.
+
 ## What is tested
 
 | File | What it covers |
 |---|---|
 | `tests/card_test.cpp` | Type and rank codes go both ways; unknown names are rejected; rule codes are unique and in snake_case |
-| `tests/rules_pack_test.cpp` | The test pack; defaults; sorted sigils; every kind of malformed pack is rejected with the path of the field |
+| `tests/rules_pack_test.cpp` | The test pack; defaults; sorted sigils; format 2 fields and official decks; every kind of malformed pack, including format 1, unknown factions, unsafe image paths and decks with wrong cards, is rejected with the path of the field |
 | `tests/deck_validator_test.cpp` | Each rule on its own: Seeker, Legacy, terrain, sizes, side deck, copy limits (also across lines and with the side deck), types, ranks, sigils, unaligned cards, cards that should not be in the deck and very large copy counts |
 | `tests/deck_properties_test.cpp` | Properties checked by RapidCheck on hundreds of random decks: legal cards within their limits only fail on size, order and split lines do not change the result, going over a limit is always detected, cards that should not be in the deck always count towards the size and mark it, without a valid Seeker that is the only issue, validation is deterministic, and exporting a random deck and importing the text gives the same deck |
 | `tests/deck_text_test.cpp` | Deck lists with the test pack: a list shaped like a malediction.gg export in both directions, Windows line endings and a byte order mark, case and extra spaces, the first lines in any order, repeated cards, empty and unknown sections, every kind of bad line with its number, the limits on copies, errors and lines, long lines in the errors, names shared by two cards and decks that cannot be exported |
@@ -210,6 +257,7 @@ read back, for example one that two cards share.
 | `tests/c_api_test.cpp` | The C API as the apps will use it: sessions, null-terminated buffers, validating, importing and exporting decks, every error code, size limits, argument checks and signatures |
 | `tests/c_header_check.c` | `mc_api.h` compiles as C11 and links from C |
 | `examples/CMakeLists.txt` | `mc_cli` on each example command |
+| `tools/content/tests/` | The importer without a network, against made-up pages and sitemaps: the pauses, robots.txt, 401, 403, 429 and 5xx, size limits, the cache and lastmod, malformed pages, stable ids, names that `import_deck` cannot tell apart, the manual file, official decks, and the same bytes from the same site |
 | `fuzz/` | libFuzzer with random packs, random commands and random deck lists: the core must never crash and must always answer with JSON, and a list it reads must export and read back as the same deck |
 
 Before every commit, `tools/ci/ci.sh all` runs locally: formatting and clang-tidy, the tests with
@@ -218,7 +266,7 @@ AddressSanitizer and UBSan, ThreadSanitizer and Release, at least 90 % line cove
 integration.
 
 Not covered yet: real Malediction cards and decklists (the official pack and real lists stay
-private and are tested only on the development machine), `mc_pack_tool keygen` with the real Argon2id limits and the terminal
+private and are tested only on the development machine, by running the importer), `mc_pack_tool keygen` with the real Argon2id limits and the terminal
 password prompt (they need 1 GiB and a person at the keyboard) and, naturally, the apps.
 
 ## Try it yourself
@@ -303,6 +351,7 @@ You can do the same with the data: in a copy of the test pack, set `"deck_min": 
 tools/ci/ci.sh coverage                  # coverage report in $MC_BUILD_ROOT/coverage/html
 MC_FUZZ_SECONDS=30 tools/ci/ci.sh fuzz   # each fuzzer for 30 seconds
 tools/ci/ci.sh lint                      # clang-format and clang-tidy
+tools/ci/ci.sh content                   # the importer tests (made-up pages, no network)
 tools/ci/ci.sh android                   # Android library and the 16 KB check
 ```
 

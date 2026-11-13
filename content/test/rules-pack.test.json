@@ -1,6 +1,6 @@
 {
   "format": "mc-rules-pack",
-  "format_version": 1,
+  "format_version": 2,
   "id": "mc-test",
   "version": "0.1.0",
   "date": "2026-11-07",
@@ -14,6 +14,11 @@
     "unaligned_cards_allowed": true,
     "copy_limits_include_side": true
   },
+  "factions": [
+    { "id": "ash", "name": "Ash Test Faction" },
+    { "id": "tide", "name": "Tide Test Faction" },
+    { "id": "thorn", "name": "Thorn Test Faction" }
+  ],
   "cards": [
     { "id": "T-SEEK-ASH", "name": "Kindra, the Ash Test Seeker", "type": "seeker", "rank": "legendary", "sigils": ["ash"] },
     { "id": "T-SEEK-DUAL", "name": "Ash and Tide Test Seeker", "type": "seeker", "rank": "legendary", "sigils": ["tide", "ash"] },
@@ -26,7 +31,12 @@
     { "id": "T-TER-01", "name": "Test Terrain: Plain", "type": "terrain" },
     { "id": "T-TER-02", "name": "Test Terrain: Bramble", "type": "terrain", "sigils": ["thorn"] },
 
-    { "id": "T-ASH-U01", "name": "Ash Test Unit 1", "type": "unit", "rank": "basic", "cost": 1, "sigils": ["ash"] },
+    { "id": "T-ASH-U01", "name": "Ash Test Unit 1", "type": "unit", "rank": "basic", "cost": 1, "sigils": ["ash"],
+      "traits": ["Test Trait", "Ember"], "abilities": ["Test Ability"],
+      "stats": { "accuracy": 2, "power_hit": 3, "power_graze": 1, "range": 0, "speed": 4, "defense": 9, "max_health": 7 },
+      "rules_text": null,
+      "image": { "file": "images/T-ASH-U01.png", "sha256": "0000000000000000000000000000000000000000000000000000000000000000", "source": "https://example.invalid/T-ASH-U01.png" },
+      "source": "https://example.invalid/card/ash-test-unit-1/" },
     { "id": "T-ASH-U02", "name": "Ash Test Unit 2", "type": "unit", "rank": "basic", "cost": 1, "sigils": ["ash"] },
     { "id": "T-ASH-U03", "name": "Ash Test Unit 3", "type": "unit", "rank": "basic", "cost": 2, "sigils": ["ash"] },
     { "id": "T-ASH-U04", "name": "Ash Test Unit 4", "type": "unit", "rank": "basic", "cost": 2, "sigils": ["ash"] },
@@ -58,5 +68,33 @@
     { "id": "T-NEU-S01", "name": "Unaligned Test Spell", "type": "spell", "rank": "basic", "cost": 1 },
 
     { "id": "T-REL-01", "name": "Test Relic", "type": "relic" }
+  ],
+  "decks": [
+    {
+      "id": "test-ash-starter",
+      "name": "Ash Test Starter",
+      "url": "https://example.invalid/decks/ash-test-starter",
+      "deck": {
+        "seeker": "T-SEEK-ASH",
+        "legacy": "T-LEG-ASH",
+        "terrain": "T-TER-01",
+        "main": [
+          { "card": "T-ASH-U01", "copies": 3 },
+          { "card": "T-ASH-U02", "copies": 3 },
+          { "card": "T-ASH-U03", "copies": 3 },
+          { "card": "T-ASH-U04", "copies": 3 },
+          { "card": "T-ASH-U05", "copies": 3 },
+          { "card": "T-ASH-U06", "copies": 3 },
+          { "card": "T-ASH-S01", "copies": 3 },
+          { "card": "T-ASH-S02", "copies": 3 },
+          { "card": "T-ASH-S03", "copies": 3 },
+          { "card": "T-ASH-I01", "copies": 3 }
+        ],
+        "side": [
+          { "card": "T-ASH-E01", "copies": 2 },
+          { "card": "T-NEU-I01", "copies": 2 }
+        ]
+      }
+    }
   ]
 }

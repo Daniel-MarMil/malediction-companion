@@ -19,6 +19,9 @@ compile_commands.json
 /content/official/*
 !/content/official/README.md
 
+# Python bytecode (tools/content and tools/ci)
+__pycache__/
+
 # Coverage, fuzzing and analysis
 *.gcda
 *.gcno

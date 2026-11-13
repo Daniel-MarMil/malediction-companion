@@ -4,6 +4,7 @@
 #pragma once
 
 #include "mc/core/card.hpp"
+#include "mc/core/deck.hpp"
 
 #include <cstddef>
 #include <functional>
@@ -41,6 +42,20 @@ struct PackInfo {
     std::string license;
 };
 
+/// A faction: the stable id that card sigils use, and the name to show (pack format 2).
+struct Faction {
+    std::string id;
+    std::string name;
+};
+
+/// An official deck of a Seeker (RF-61), shipped inside the pack.
+struct OfficialDeck {
+    std::string id;
+    std::string name;
+    std::string url;  ///< Its Play Network page; empty if the pack does not give it.
+    Deck deck;
+};
+
 /// Error while reading a rules pack.
 class PackError : public std::runtime_error {
 public:
@@ -55,6 +70,8 @@ public:
 
     [[nodiscard]] const PackInfo& info() const noexcept { return info_; }
     [[nodiscard]] const DeckRules& deck_rules() const noexcept { return rules_; }
+    [[nodiscard]] const std::vector<Faction>& factions() const noexcept { return factions_; }
+    [[nodiscard]] const std::vector<OfficialDeck>& official_decks() const noexcept { return decks_; }
     [[nodiscard]] const std::vector<Card>& cards() const noexcept { return cards_; }
     [[nodiscard]] std::size_t card_count() const noexcept { return cards_.size(); }
 
@@ -64,7 +81,9 @@ public:
 private:
     PackInfo info_;
     DeckRules rules_;
+    std::vector<Faction> factions_;
     std::vector<Card> cards_;
+    std::vector<OfficialDeck> decks_;
     std::map<std::string, std::size_t, std::less<>> index_;
 };
 

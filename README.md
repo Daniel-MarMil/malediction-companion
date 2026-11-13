@@ -17,7 +17,8 @@ server, with a copy on the phone to play without a network (ADR-13).
 
 Phase 0: the shared C++20 core.
 
-- Versioned rules packs (`mc-rules-pack` format 1) with a detached Ed25519 signature, checked
+- Versioned rules packs (`mc-rules-pack` format 2: factions, cards with traits, abilities, stats
+  and the hash of each image, and official decks) with a detached Ed25519 signature, checked
   against a given key or against the keys compiled into the core (ADR-06).
 - Deck validation (RF-06): Seeker, Legacy and terrain; 30 to 50 cards; sigils; copies per rank;
   a side deck of 7. The limits come from the pack, not from the code.
@@ -25,6 +26,8 @@ Phase 0: the shared C++20 core.
   error for each line it does not understand, and export a deck in the same format.
 - C API for the apps (ADR-11), and `mc_cli`, a command-line client to try it by hand.
 - `mc_pack_tool`, the development tool that creates the pack keys and signs packs.
+- The official pack importer (`tools/content/`), a development tool that reads the public card
+  pages of malediction.gg slowly and writes the pack to `content/official/` (ADR-12).
 - Tests with GoogleTest and RapidCheck, sanitizers, coverage and fuzzing with libFuzzer.
 
 The Android app (Kotlin with Jetpack Compose) and the first server modules come next, and then
@@ -44,6 +47,19 @@ distributing it without express permission, even on a non-profit basis, so a lic
 requested from Loot Studios before publishing any version. More details in
 [`content/official/README.md`](content/official/README.md).
 
+The official pack is built on the development machine with the importer and signed by hand:
+
+```sh
+tools/ci/ci.sh release                       # builds mc_cli, which the importer uses
+tools/content/import_official.py             # writes content/official/rules-pack.json and images/
+mc_pack_tool sign ~/.config/seekers-companion/keys/dev.mcsk content/official/rules-pack.json
+```
+
+It reads only public pages (robots.txt, `card-sitemap.xml`, each card page and its image), one
+request at a time with at least 2 seconds between them, and keeps what it downloads in
+`~/.cache/seekers-companion/content/`, outside the repository; a page is downloaded again only
+when the sitemap says it changed. Nothing it downloads goes into the repository.
+
 The tests use a pack of made-up cards: [`content/test/rules-pack.test.json`](content/test/rules-pack.test.json).
 
 ## Layout
@@ -61,6 +77,7 @@ content/official/     Private official content (ignored by git)
 docs/                 Architecture decisions (adr/), code tour and local environment guide
 tools/ci/             Local checks (tools/ci/ci.sh) and the scripts they use
 tools/pack/           mc_pack_tool: pack keys and signatures (development only)
+tools/content/        The official pack importer and its tests (development only)
 keys/                 Public development key, dev.pub (ADR-06)
 tools/dev/            Local environment setup
 ```
@@ -227,6 +244,7 @@ Ubuntu 26.04 (GCC 15, Clang 21 and CMake 4.2), and `tools/ci/ci.sh all` must pas
 |---|---|
 | `lint` | clang-format and clang-tidy |
 | `asan`, `tsan`, `release` | The tests with AddressSanitizer and UBSan, with ThreadSanitizer, and in Release |
+| `content` | The importer tests, with made-up pages and no network |
 | `coverage` | Minimum line coverage of 90 % of `core/src` (RNF-17) |
 | `fuzz` | The libFuzzer targets (RNF-19) |
 | `android` | The Android library with the 16 KB check (RNF-20) |
